@@ -30,12 +30,6 @@
     };
     timeout = 1;
   };
-<<<<<<< HEAD
-=======
-  #boot.extraModprobeConfig = ''
-  #  options usbserial vendor=0x12d1 product=0x1506
-  #'';
->>>>>>> 4398ed5 (first commit from thinkpad)
   swapDevices = [{
     device = "/var/lib/swapfile";
     size = 16 * 1024;
@@ -137,14 +131,11 @@
   networking.firewall.enable = true; # Firewall
   services.openssh.enable = true; # Enable SSH
   services.printing.enable = true; # Enable printer support
-<<<<<<< HEAD
-=======
   networking.modemmanager.enable = true;
   systemd.services.ModemManager = {
     enable = pkgs.lib.mkForce true;
     wantedBy = [ "multi-user.target" "network.target" ];
   };
->>>>>>> 4398ed5 (first commit from thinkpad)
 
   # Sound
   services.pulseaudio.enable = false;
@@ -175,14 +166,11 @@
   # Security
   security.polkit.enable = true; # managing user premitions
   programs.dconf.enable = true; # somthing, something, keys...
-<<<<<<< HEAD
-=======
   # services.pcscd.enable = true; # Smart card... I donno
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
   };
->>>>>>> 4398ed5 (first commit from thinkpad)
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support
@@ -208,15 +196,11 @@
     xfce.xfce4-terminal
     vim
 
-<<<<<<< HEAD
-=======
     # Mobile internett:
     modem-manager-gui
 
     # Backupp browser:
     chromium
-
->>>>>>> 4398ed5 (first commit from thinkpad)
     # Multi monitor support:
     arandr
     autorandr
@@ -254,11 +238,8 @@
     file # detect a file’s type/format
     xclip # clipboard manager
     htop # program control pannel
-<<<<<<< HEAD
-=======
     atop # program control pannel
     glances # program control pannel
->>>>>>> 4398ed5 (first commit from thinkpad)
     libnotify # notifyer backend
     xorg.xev # show keycodes
     xorg.xmodmap # list keycodes
@@ -268,10 +249,7 @@
     wget
     usbutils
     lsof
-<<<<<<< HEAD
-=======
     pciutils
->>>>>>> 4398ed5 (first commit from thinkpad)
   ];
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯

@@ -29,8 +29,6 @@ local function icon_text(icon, widget)
 end
 
 ------------------------------------------------------------------------------------------------------------
-<<<<<<< HEAD
-=======
 ------------------------------------------------- ETHERNET -------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
@@ -46,7 +44,6 @@ gears.timer {timeout = 10, autostart = true, callback = update_net_ethernet}
 gears.timer.delayed_call(update_net_ethernet)
 
 ------------------------------------------------------------------------------------------------------------
->>>>>>> 4398ed5 (first commit from thinkpad)
 ------------------------------------------------- WIFI -----------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
@@ -108,22 +105,6 @@ net_wireless:buttons(
 ------------------------------------------------- MOBILE ---------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-------------------------------------------------------------------------------------------------------------
-------------------------------------------------- ETHERNET -------------------------------------------------
-------------------------------------------------------------------------------------------------------------
-
-local net_ethernet = wibox.widget.textbox()
-local function update_net_ethernet()
-    local handle = io.popen("ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1")
-    local ip = handle:read("*all"):gsub("%s+", "")
-    handle:close()
-    local text = ip ~= "" and ("🔌 " .. ip) or ""
-    net_ethernet.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
-end
-gears.timer {timeout = 10, autostart = true, callback = update_net_ethernet}
-gears.timer.delayed_call(update_net_ethernet)
-=======
 local net_mobile = wibox.widget.textbox()
 local function update_net_mobile()
     awful.spawn.easy_async_with_shell(
@@ -164,9 +145,8 @@ local function update_net_mobile()
         end
     )
 end
-gears.timer {timeout = 10, autostart = true, callback = update_net_mobile}
+gears.timer {timeout = 5, autostart = true, callback = update_net_mobile}
 gears.timer.delayed_call(update_net_mobile)
->>>>>>> 4398ed5 (first commit from thinkpad)
 
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- SYS MONITOR ----------------------------------------------
@@ -487,13 +467,9 @@ end
 
 statusbar.widget = {
     layout = wibox.layout.fixed.horizontal,
-<<<<<<< HEAD
-    icon_text("", net_wireless),
-=======
     icon_text("", net_ethernet),
     icon_text("", net_wireless),
     icon_text("", net_mobile),
->>>>>>> 4398ed5 (first commit from thinkpad)
     sep(),
     icon_text("", bluetooth),
     sep(),

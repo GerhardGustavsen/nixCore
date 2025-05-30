@@ -103,10 +103,6 @@
     spotify
     steam
     kicad-small
-<<<<<<< HEAD
-    chromium
-=======
->>>>>>> 4398ed5 (first commit from thinkpad)
     discord
 
     # Editors:
