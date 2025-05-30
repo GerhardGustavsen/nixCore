@@ -1,0 +1,512 @@
+local awful = require("awful")
+local wibox = require("wibox")
+local gears = require("gears")
+local beautiful = require("beautiful")
+
+local statusbar = {}
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- THEMING --------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local color_good = "#00ff00"
+local color_degraded = "#ff7300"
+local color_bad = "#ff0000"
+
+-- Helper to make a widget with icon and text
+local function icon_text(icon, widget)
+    local iconbox =
+        wibox.widget {
+        markup = string.format("<span font='%s'>%s</span>", beautiful.font, icon),
+        widget = wibox.widget.textbox
+    }
+    return wibox.widget {
+        iconbox,
+        widget,
+        layout = wibox.layout.fixed.horizontal,
+        spacing = 4
+    }
+end
+
+------------------------------------------------------------------------------------------------------------
+<<<<<<< HEAD
+=======
+------------------------------------------------- ETHERNET -------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local net_ethernet = wibox.widget.textbox()
+local function update_net_ethernet()
+    local handle = io.popen("ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1")
+    local ip = handle:read("*all"):gsub("%s+", "")
+    handle:close()
+    local text = ip ~= "" and ("🔌 " .. ip) or ""
+    net_ethernet.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
+end
+gears.timer {timeout = 10, autostart = true, callback = update_net_ethernet}
+gears.timer.delayed_call(update_net_ethernet)
+
+------------------------------------------------------------------------------------------------------------
+>>>>>>> 4398ed5 (first commit from thinkpad)
+------------------------------------------------- WIFI -----------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local net_wireless = wibox.widget.textbox()
+local function update_net_wireless()
+    awful.spawn.easy_async_with_shell(
+        [[
+            nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}'
+        ]],
+        function(stdout)
+            local signal, ssid = stdout:match("(%d+)%s+(.*)")
+            local text
+            if signal and ssid and ssid ~= "" then
+                local signal_num = tonumber(signal)
+                local color = beautiful.fg_normal
+                if signal_num < 20 then
+                    color = color_bad
+                elseif signal_num < 50 then
+                    color = color_degraded
+                else
+                    color = color_good
+                end
+                text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
+            else
+                text = "<span foreground='" .. color_bad .. "'>󰖪 </span>"
+            end
+            net_wireless.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
+        end
+    )
+end
+gears.timer {
+    timeout = 5,
+    autostart = true,
+    callback = update_net_wireless
+}
+gears.timer.delayed_call(update_net_wireless)
+net_wireless:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
+                awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
+            end
+        ),
+        awful.button(
+            {},
+            3,
+            function()
+                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
+                awful.spawn.with_shell("xfce4-terminal -e speedtest")
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- MOBILE ---------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+<<<<<<< HEAD
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- ETHERNET -------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local net_ethernet = wibox.widget.textbox()
+local function update_net_ethernet()
+    local handle = io.popen("ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1")
+    local ip = handle:read("*all"):gsub("%s+", "")
+    handle:close()
+    local text = ip ~= "" and ("🔌 " .. ip) or ""
+    net_ethernet.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
+end
+gears.timer {timeout = 10, autostart = true, callback = update_net_ethernet}
+gears.timer.delayed_call(update_net_ethernet)
+=======
+local net_mobile = wibox.widget.textbox()
+local function update_net_mobile()
+    awful.spawn.easy_async_with_shell(
+        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']],
+        function(stdout)
+            local signal, tech = stdout:match("(%d+)%s+(.*)")
+            if tech then
+                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
+                if tech == "lte" then
+                    tech = "4G"
+                elseif tech == "hspa" or tech == "hsupa" or tech == "hsdpa" or tech == "umts" then
+                    tech = "3G"
+                elseif tech == "edge" or tech == "gprs" then
+                    tech = "2G"
+                elseif tech == "5g" or tech == "5gnr" then
+                    tech = "5G"
+                else
+                    tech = "E"
+                end
+            end
+
+            local text
+            if signal and tech then
+                local signal_num = tonumber(signal)
+                local color = beautiful.fg_normal
+                if signal_num < 10 then
+                    color = color_bad
+                elseif signal_num < 30 then
+                    color = color_degraded
+                else
+                    color = color_good
+                end
+                text = string.format("<span size='12pt' rise='7000' foreground='%s'>%s</span>", color, tech)
+            else
+                text = "<span foreground='" .. color_degraded .. "'></span>"
+            end
+            net_mobile.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
+        end
+    )
+end
+gears.timer {timeout = 10, autostart = true, callback = update_net_mobile}
+gears.timer.delayed_call(update_net_mobile)
+>>>>>>> 4398ed5 (first commit from thinkpad)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- SYS MONITOR ----------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local sys = wibox.widget.textbox()
+local cpu_prev = nil
+
+local function update_sys()
+    -- === CPU ===
+    local f_cpu = io.open("/proc/stat", "r")
+    local line = f_cpu:read("*l")
+    f_cpu:close()
+    local u, n, s, i = line:match("cpu%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+    u, n, s, i = tonumber(u), tonumber(n), tonumber(s), tonumber(i)
+
+    local prev = cpu_prev or {u = u, n = n, s = s, i = i}
+    local dt = (u + n + s + i) - (prev.u + prev.n + prev.s + prev.i)
+    local da = (u + n + s) - (prev.u + prev.n + prev.s)
+    cpu_prev = {u = u, n = n, s = s, i = i}
+
+    local cpu_usage = (dt > 0) and math.floor(da / dt * 100 + 0.5) or 0
+    local cpu_color = beautiful.fg_normal
+    if cpu_usage >= 90 then
+        cpu_color = color_bad
+    elseif cpu_usage >= 70 then
+        cpu_color = color_degraded
+    end
+
+    -- === Memory ===
+    local f_mem = io.open("/proc/meminfo", "r")
+    local mem_total_kb, mem_free_kb
+    for line in f_mem:lines() do
+        if line:match("MemTotal") then
+            mem_total_kb = tonumber(line:match("%d+"))
+        elseif line:match("MemAvailable") then
+            mem_free_kb = tonumber(line:match("%d+"))
+        end
+        if mem_total_kb and mem_free_kb then
+            break
+        end
+    end
+    f_mem:close()
+
+    local mem_used = math.floor((mem_total_kb - mem_free_kb) / 1024)
+    local mem_total = math.floor(mem_total_kb / 1024)
+    local mem_used_percent = (mem_total_kb - mem_free_kb) / mem_total_kb * 100
+
+    local mem_color = beautiful.fg_normal
+    if mem_used_percent >= 90 then
+        mem_color = color_bad
+    elseif mem_used_percent >= 70 then
+        mem_color = color_degraded
+    end
+
+    -- === Update widget ===
+    sys.markup =
+        string.format(
+        "<span font='%s'><span foreground='%s'>%02d%% </span>  <span foreground='%s'>%d/%d </span></span>",
+        beautiful.font,
+        cpu_color,
+        cpu_usage,
+        mem_color,
+        mem_used,
+        mem_total
+    )
+end
+
+gears.timer {timeout = 3, autostart = true, callback = update_sys}
+gears.timer.delayed_call(update_sys)
+sys:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("xfce4-terminal -e htop")
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- DISK -----------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local disk = wibox.widget.textbox()
+local function parse_gb(avail_str)
+    local num, unit = avail_str:match("(%d+%.?%d*)([GMK])")
+    if not num or not unit then
+        return 0
+    end
+    num = tonumber(num)
+    if unit == "M" then
+        return num / 1024
+    elseif unit == "K" then
+        return num / (1024 * 1024)
+    elseif unit == "G" then
+        return num
+    else
+        return 0
+    end
+end
+local function update_disk()
+    awful.spawn.easy_async_with_shell(
+        "df -h / | awk 'NR==2 {print $4}'",
+        function(stdout)
+            local avail = stdout:gsub("%s+", "")
+            local avail_gb = parse_gb(avail)
+            local color = beautiful.fg_normal
+            if avail_gb < 10 then
+                color = color_bad
+            elseif avail_gb < 100 then
+                color = color_degraded
+            end
+            disk.markup = string.format("<span font='%s' foreground='%s'>%sB 󰉋 </span>", beautiful.font, color, avail)
+        end
+    )
+end
+gears.timer {timeout = 601, autostart = true, callback = update_disk}
+gears.timer.delayed_call(update_disk)
+disk:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("baobab", false)
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- VOLUME ---------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local volume = wibox.widget.textbox()
+local function update_volume()
+    awful.spawn.easy_async_with_shell(
+        "env XDG_RUNTIME_DIR=/run/user/$(id -u) wpctl get-volume @DEFAULT_SINK@",
+        function(stdout, _, _, exitcode)
+            if exitcode ~= 0 or not stdout then
+                volume.markup = string.format("<span font='%s' size='13pt' rise='8000'>󰟢 </span>", beautiful.font)
+                return
+            end
+            local muted = stdout:match("MUTED")
+            local icon = muted and "󰸈 " or "󰕾 "
+            volume.markup = string.format("<span font='%s' size='13pt' rise='8000'>%s</span>", beautiful.font, icon)
+        end
+    )
+end
+volume:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("pavucontrol", false)
+            end
+        )
+    )
+)
+_G.update_volume_icon = update_volume
+gears.timer.delayed_call(update_volume)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- BLUETOOTH ------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local bluetooth = wibox.widget.textbox()
+
+local function update_bluetooth()
+    awful.spawn.easy_async_with_shell(
+        [[bluetoothctl show; bluetoothctl devices Connected]],
+        function(stdout)
+            local powered = stdout:match("Powered: yes")
+            local connected = select(2, stdout:gsub("Device", "")) - 1
+
+            local icon_char = powered and "󰂯" or "󰂲"
+            local color = not powered and color_degraded or (connected > 0 and color_good or beautiful.fg_normal)
+
+            local icon_markup =
+                string.format(
+                "<span font='%s' foreground='%s' size='13pt' rise='3000'>%s</span>",
+                beautiful.font,
+                color,
+                icon_char
+            )
+
+            local number_markup = ""
+            if powered and connected > 0 then
+                number_markup =
+                    string.format("<span font='%s' foreground='%s'> %d</span>", beautiful.font, color, connected)
+            end
+
+            bluetooth.markup = icon_markup .. number_markup
+        end
+    )
+end
+
+gears.timer {
+    timeout = 3,
+    autostart = true,
+    callback = update_bluetooth
+}
+gears.timer.delayed_call(update_bluetooth)
+
+bluetooth:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("blueman-manager", false)
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- BATTERY --------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local battery = wibox.widget.textbox()
+local function update_battery()
+    awful.spawn.easy_async_with_shell(
+        "bash -c 'STATUS=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null); " ..
+            'CAPACITY=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null); echo "$STATUS $CAPACITY"\'',
+        function(stdout)
+            local status, percent_str = stdout:match("(%a+)%s+(%d+)")
+            local percent = tonumber(percent_str)
+            if not status or not percent then
+                battery.markup = "<span foreground='" .. color_bad .. "'> ?</span>"
+                return
+            end
+
+            local icon
+            local color = beautiful.fg_normal
+
+            if status == "Charging" or status == "Full" then
+                icon = ""
+                color = color_good
+            else
+                if percent <= 5 then
+                    icon = ""
+                    color = color_bad
+                elseif percent <= 10 then
+                    icon = ""
+                    color = color_bad
+                elseif percent <= 20 then
+                    icon = ""
+                    color = color_degraded
+                elseif percent <= 50 then
+                    icon = ""
+                    color = beautiful.fg_normal
+                elseif percent <= 80 then
+                    icon = ""
+                    color = beautiful.fg_normal
+                elseif percent <= 90 then
+                    icon = ""
+                    color = beautiful.fg_normal
+                else
+                    icon = ""
+                    color = color_good
+                end
+            end
+
+            battery.markup =
+                string.format("<span font='%s' foreground='%s'>%s%% %s </span>", beautiful.font, color, percent, icon)
+        end
+    )
+end
+
+gears.timer {timeout = 10, autostart = true, callback = update_battery}
+gears.timer.delayed_call(update_battery)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- CLOCK ----------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local clock = wibox.widget.textbox()
+local function update_clock()
+    clock.markup = string.format("<span font='%s'>%s</span>", beautiful.font, os.date("%d.%m   %H:%M   "))
+end
+gears.timer {timeout = 60, autostart = true, callback = update_clock}
+gears.timer.delayed_call(update_clock)
+clock:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("firefox --new-window https://calendar.google.com/calendar", false)
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- SEPERATOR ------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local function sep()
+    return wibox.widget {
+        markup = string.format(
+            "<span font='%s' foreground='%s' size='13pt' rise='8000'> ❮ </span>",
+            beautiful.font,
+            "#8700ff"
+        ),
+        widget = wibox.widget.textbox
+    }
+end
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------- STATUSBAR ------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+statusbar.widget = {
+    layout = wibox.layout.fixed.horizontal,
+<<<<<<< HEAD
+    icon_text("", net_wireless),
+=======
+    icon_text("", net_ethernet),
+    icon_text("", net_wireless),
+    icon_text("", net_mobile),
+>>>>>>> 4398ed5 (first commit from thinkpad)
+    sep(),
+    icon_text("", bluetooth),
+    sep(),
+    icon_text("", volume),
+    sep(),
+    icon_text("", disk),
+    sep(),
+    icon_text("", sys),
+    sep(),
+    icon_text("", battery),
+    sep(),
+    icon_text("", clock),
+    sep()
+}
+
+return statusbar

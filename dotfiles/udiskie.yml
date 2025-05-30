@@ -1,0 +1,22 @@
+program_options:
+  tray: auto # Show tray icon
+  menu: flat # ["flat" | "nested"]
+  notify: true # Enable notifications
+  automount: true # Enable automatic mounting
+  file_manager: thunar # Program to open mounted directories
+
+# Customize which notifications are shown for how long. Possible
+# values are:
+#   positive number         timeout in seconds
+#   false                   disable
+#   -1                      use the libnotify default timeout
+
+notifications:
+  timeout: 1.5 # Notification timeout in seconds
+  device_mounted: false # Show mount notifications for 5 seconds
+  device_unmounted: false # unmount notification
+  device_added: 5 # device has appeared
+  device_removed: 5 # device has disappeared
+  device_unlocked: -1 # encrypted device was unlocked
+  device_locked: -1 # encrypted device was locked
+  job_failed: -1 # mount/unlock/.. has failed
