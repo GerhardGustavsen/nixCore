@@ -29,6 +29,123 @@ local function icon_text(icon, widget)
 end
 
 ------------------------------------------------------------------------------------------------------------
+------------------------------------------------- NETWORK -------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local network = wibox.widget.textbox()
+local function update_net_combined()
+    local ethernet_cmd = "ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1"
+    local wifi_cmd = [[nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}']]
+    local mobile_cmd =
+        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']]
+
+    awful.spawn.easy_async_with_shell(
+        ethernet_cmd,
+        function(eth_stdout)
+            local eth_ip = eth_stdout:gsub("%s+", "")
+            local eth_text = eth_ip ~= "" and ("🔌 " .. eth_ip) or ""
+
+            awful.spawn.easy_async_with_shell(
+                wifi_cmd,
+                function(wifi_stdout)
+                    local signal, ssid = wifi_stdout:match("(%d+)%s+(.*)")
+                    local wifi_text = ""
+                    if signal and ssid and ssid ~= "" then
+                        local signal_num = tonumber(signal)
+                        local color = beautiful.fg_normal
+                        if signal_num < 20 then
+                            color = color_bad
+                        elseif signal_num < 50 then
+                            color = color_degraded
+                        else
+                            color = color_good
+                        end
+                        wifi_text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
+                    end
+
+                    awful.spawn.easy_async_with_shell(
+                        mobile_cmd,
+                        function(mobile_stdout)
+                            local mobile_signal, tech = mobile_stdout:match("(%d+)%s+(.*)")
+                            local mobile_text = ""
+                            if tech then
+                                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
+                                if tech == "lte" then
+                                    tech = "4G"
+                                elseif tech == "hspa" or tech == "hsupa" or tech == "hsdpa" or tech == "umts" then
+                                    tech = "3G"
+                                elseif tech == "edge" or tech == "gprs" then
+                                    tech = "2G"
+                                elseif tech == "5g" or tech == "5gnr" then
+                                    tech = "5G"
+                                else
+                                    tech = "E"
+                                end
+                            end
+
+                            if mobile_signal and tech then
+                                local signal_num = tonumber(mobile_signal)
+                                local color = beautiful.fg_normal
+                                if signal_num < 10 then
+                                    color = color_bad
+                                elseif signal_num < 30 then
+                                    color = color_degraded
+                                else
+                                    color = color_good
+                                end
+                                mobile_text =
+                                    string.format(
+                                    "<span size='12pt' rise='7000' foreground='%s'>%s</span>",
+                                    color,
+                                    tech
+                                )
+                            end
+
+                            -- Combine all non-empty parts with spacing
+                            local parts = {}
+                            if eth_text ~= "" then
+                                table.insert(parts, eth_text)
+                            end
+                            if wifi_text ~= "" then
+                                table.insert(parts, wifi_text)
+                            end
+                            if mobile_text ~= "" then
+                                table.insert(parts, mobile_text)
+                            end
+                            network.markup =
+                                string.format("<span font='%s'>%s</span>", beautiful.font, table.concat(parts, "  "))
+                        end
+                    )
+                end
+            )
+        end
+    )
+end
+
+gears.timer {timeout = 5, autostart = true, callback = update_net_combined}
+gears.timer.delayed_call(update_net_combined)
+
+network:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
+                awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
+            end
+        ),
+        awful.button(
+            {},
+            3,
+            function()
+                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
+                awful.spawn.with_shell("xfce4-terminal -e speedtest")
+            end
+        )
+    )
+)
+------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- ETHERNET -------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
@@ -467,9 +584,7 @@ end
 
 statusbar.widget = {
     layout = wibox.layout.fixed.horizontal,
-    icon_text("", net_ethernet),
-    icon_text("", net_wireless),
-    icon_text("", net_mobile),
+    icon_text("", network),
     sep(),
     icon_text("", bluetooth),
     sep(),
