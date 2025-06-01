@@ -58,7 +58,7 @@ local function update_net_combined()
             end
 
             if #parts == 0 then
-                network.markup = string.format("<span font='%s'>🚫 No internet</span>", beautiful.font)
+                network.markup = string.format("<span foreground='%s' font='%s'>󰖪 </span>", color_bad, beautiful.font)
             else
                 local final = table.concat(parts, " ")
                 network.markup = string.format("<span font='%s'>%s</span>", beautiful.font, final)
@@ -193,7 +193,7 @@ network:buttons(
             {},
             1,
             function()
-                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
+                awful.spawn("xfce4-terminal --title 'popup' --geometry=110x40 -e nmtui", false)
                 awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
             end
         ),
@@ -256,7 +256,7 @@ bluetooth:buttons(
             {},
             1,
             function()
-                awful.spawn("blueman-manager", false)
+                awful.spawn("xfce4-terminal --title 'popup' --geometry=110x40 -e bluetuith", false)
             end
         )
     )

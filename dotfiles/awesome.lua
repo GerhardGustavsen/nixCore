@@ -414,15 +414,11 @@ clientkeys =
                 return
             end
 
-            -- List of programs to "scrap" instead of close
+            local class = c.class or ""
+            local name = c.name or ""
+
+            -- Programs eligible for scrap
             local scrap_classes = {
-                -- Terminals
-                ["Alacritty"] = true,
-                ["kitty"] = true,
-                ["Xfce4-terminal"] = true,
-                ["org.gnome.Terminal"] = true,
-                ["konsole"] = true,
-                ["Terminal"] = true,
                 -- Editors
                 ["code"] = true,
                 ["libreoffice"] = true,
@@ -440,21 +436,38 @@ clientkeys =
                 ["Fusion360"] = true
             }
 
-            local class = c.class or ""
-            if scrap_classes[class] then
+            -- Terminal classes (scrap only if generic name)
+            local terminal_classes = {
+                ["Alacritty"] = true,
+                ["kitty"] = true,
+                ["Xfce4-terminal"] = true,
+                ["org.gnome.Terminal"] = true,
+                ["konsole"] = true,
+                ["Terminal"] = true
+            }
+
+            local function is_generic_terminal()
+                return terminal_classes[class] and
+                    (name == "" or name:lower():match("terminal") or name:lower():match("^bash$") or
+                        name:lower():match("^zsh$") or
+                        name:lower():match("^fish$") or
+                        name:lower():match("^sh$"))
+            end
+
+            local should_scrap = scrap_classes[class] or is_generic_terminal()
+
+            if should_scrap then
                 local scrap_tag = awful.tag.find_by_name(c.screen, "scrap")
                 if scrap_tag then
-                    -- Remove all clients from scrap tag
                     for _, cl in ipairs(scrap_tag:clients()) do
                         cl:kill()
                     end
-                    -- Move focused client to scrap tag
                     c:move_to_tag(scrap_tag)
                     return
                 end
             end
 
-            -- Default fallback: close the client
+            -- Fallback: close normally
             c:kill()
         end,
         {description = "send to scrap or close", group = "client"}
@@ -626,9 +639,9 @@ awful.rules.rules = {
             )
         end
     },
-    -- Nmtui:
+    -- Terminal popups:
     {
-        rule = {name = "nmtui-popup"},
+        rule = {name = "popup"},
         properties = {floating = true, placement = awful.placement.centered, width = 1000, height = 800, ontop = true}
     },
     -- Terminals:

@@ -43,21 +43,21 @@
   #};
 
   # Autoconnect monitors
-  systemd.user.services.new-monitor = {
-    Unit = {
-      Description = "autoconnect to new monitors";
-      After = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "%h/nixCore/scripts/new-monitor.sh";
-      Restart = "on-failure";
-      RestartSec = 3;
-      Environment = "PATH=/run/current-system/sw/bin";
-      Group = "users";
-    };
-    Install = { WantedBy = [ "default.target" ]; };
-  };
+  #systemd.user.services.new-monitor = {
+  #  Unit = {
+  #    Description = "autoconnect to new monitors";
+  #    After = [ "graphical-session.target" ];
+  #  };
+  #  Service = {
+  #    Type = "oneshot";
+  #    ExecStart = "%h/nixCore/scripts/new-monitor.sh";
+  #    Restart = "on-failure";
+  #    RestartSec = 3;
+  #    Environment = "PATH=/run/current-system/sw/bin";
+  #    Group = "users";
+  #  };
+  #  Install = { WantedBy = [ "default.target" ]; };
+  #};
 
   #  # Autoconnect microcontollers
   #  systemd.user.services.mc-connect = {

@@ -158,7 +158,6 @@ in {
   # Bluetooth
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
-  services.blueman.enable = true;
   environment.etc = {
     "wireplumber/bluetooth.lua.d/51-bluez-config.lua".text =
       "	bluez_monitor.properties = {\n		[\"bluez5.enable-sbc-xq\"] = true,\n		[\"bluez5.enable-msbc\"] = true,\n		[\"bluez5.enable-hw-volume\"] = true,\n		[\"bluez5.headset-roles\"] = \"[ hsp_hs hsp_ag hfp_hf hfp_ag ]\"\n	}\n";
@@ -244,7 +243,6 @@ in {
     # Small programs:
     rofi # Application launcer
     dunst # notification daemon
-    xfce.xfce4-notifyd # another one
     flameshot # screenshot app
     pavucontrol # Audio controll
     polkit_gnome # GUI for user auth
@@ -255,6 +253,7 @@ in {
     baobab # disk analyser tool
     speedtest-cli # network speed test
     nethogs # program network usage
+    bluetuith
 
     # Cmd tools:
     zip # zip files
@@ -264,8 +263,6 @@ in {
     file # detect a file’s type/format
     xclip # clipboard manager
     htop # program control pannel
-    atop # program control pannel
-    glances # program control pannel
     libnotify # notifyer backend
     xorg.xev # show keycodes
     xorg.xmodmap # list keycodes
