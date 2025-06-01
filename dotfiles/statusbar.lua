@@ -33,91 +33,105 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local network = wibox.widget.textbox()
-local function update_net_combined()
-    local ethernet_cmd = "ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1"
-    local wifi_cmd = [[nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}']]
-    local mobile_cmd =
-        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']]
 
+local function update_net_combined()
+    local result = {
+        eth_done = false,
+        wifi_done = false,
+        mobile_done = false,
+        eth_text = "",
+        wifi_text = "",
+        mobile_text = ""
+    }
+
+    local function try_display()
+        if result.eth_done and result.wifi_done and result.mobile_done then
+            local parts = {}
+            if result.eth_text ~= "" then
+                table.insert(parts, result.eth_text)
+            end
+            if result.wifi_text ~= "" then
+                table.insert(parts, result.wifi_text)
+            end
+            if result.mobile_text ~= "" then
+                table.insert(parts, result.mobile_text)
+            end
+            if #parts == 0 then
+                table.insert(parts, "🚫 No internet")
+            end
+
+            network.markup = string.format("<span font='%s'>%s</span>", beautiful.font, table.concat(parts, "  "))
+        end
+    end
+
+    -- Ethernet
     awful.spawn.easy_async_with_shell(
-        ethernet_cmd,
+        "ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1",
         function(eth_stdout)
             local eth_ip = eth_stdout:gsub("%s+", "")
-            local eth_text = eth_ip ~= "" and ("🔌 " .. eth_ip) or ""
+            if eth_ip ~= "" then
+                result.eth_text = "🔌 " .. eth_ip
+            end
+            result.eth_done = true
+            try_display()
+        end
+    )
 
-            awful.spawn.easy_async_with_shell(
-                wifi_cmd,
-                function(wifi_stdout)
-                    local signal, ssid = wifi_stdout:match("(%d+)%s+(.*)")
-                    local wifi_text = ""
-                    if signal and ssid and ssid ~= "" then
-                        local signal_num = tonumber(signal)
-                        local color = beautiful.fg_normal
-                        if signal_num < 20 then
-                            color = color_bad
-                        elseif signal_num < 50 then
-                            color = color_degraded
-                        else
-                            color = color_good
-                        end
-                        wifi_text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
-                    end
-
-                    awful.spawn.easy_async_with_shell(
-                        mobile_cmd,
-                        function(mobile_stdout)
-                            local mobile_signal, tech = mobile_stdout:match("(%d+)%s+(.*)")
-                            local mobile_text = ""
-                            if tech then
-                                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
-                                if tech == "lte" then
-                                    tech = "4G"
-                                elseif tech == "hspa" or tech == "hsupa" or tech == "hsdpa" or tech == "umts" then
-                                    tech = "3G"
-                                elseif tech == "edge" or tech == "gprs" then
-                                    tech = "2G"
-                                elseif tech == "5g" or tech == "5gnr" then
-                                    tech = "5G"
-                                else
-                                    tech = "E"
-                                end
-                            end
-
-                            if mobile_signal and tech then
-                                local signal_num = tonumber(mobile_signal)
-                                local color = beautiful.fg_normal
-                                if signal_num < 10 then
-                                    color = color_bad
-                                elseif signal_num < 30 then
-                                    color = color_degraded
-                                else
-                                    color = color_good
-                                end
-                                mobile_text =
-                                    string.format(
-                                    "<span size='12pt' rise='7000' foreground='%s'>%s</span>",
-                                    color,
-                                    tech
-                                )
-                            end
-
-                            -- Combine all non-empty parts with spacing
-                            local parts = {}
-                            if eth_text ~= "" then
-                                table.insert(parts, eth_text)
-                            end
-                            if wifi_text ~= "" then
-                                table.insert(parts, wifi_text)
-                            end
-                            if mobile_text ~= "" then
-                                table.insert(parts, mobile_text)
-                            end
-                            network.markup =
-                                string.format("<span font='%s'>%s</span>", beautiful.font, table.concat(parts, "  "))
-                        end
-                    )
+    -- WiFi
+    awful.spawn.easy_async_with_shell(
+        [[nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}']],
+        function(wifi_stdout)
+            local signal, ssid = wifi_stdout:match("(%d+)%s+(.*)")
+            if signal and ssid and ssid ~= "" then
+                local signal_num = tonumber(signal)
+                local color = beautiful.fg_normal
+                if signal_num < 20 then
+                    color = color_bad
+                elseif signal_num < 50 then
+                    color = color_degraded
+                else
+                    color = color_good
                 end
-            )
+                result.wifi_text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
+            end
+            result.wifi_done = true
+            try_display()
+        end
+    )
+
+    -- LTE / Mobile
+    awful.spawn.easy_async_with_shell(
+        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']],
+        function(mobile_stdout)
+            local signal, tech = mobile_stdout:match("(%d+)%s+(.*)")
+            if signal and tech then
+                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
+                if tech == "lte" then
+                    tech = "4G"
+                elseif tech:match("hspa") or tech == "umts" then
+                    tech = "3G"
+                elseif tech == "edge" or tech == "gprs" then
+                    tech = "2G"
+                elseif tech:match("5g") then
+                    tech = "5G"
+                else
+                    tech = "E"
+                end
+
+                local signal_num = tonumber(signal)
+                local color = beautiful.fg_normal
+                if signal_num < 10 then
+                    color = color_bad
+                elseif signal_num < 30 then
+                    color = color_degraded
+                else
+                    color = color_good
+                end
+
+                result.mobile_text = string.format("<span foreground='%s'>%s</span>", color, tech)
+            end
+            result.mobile_done = true
+            try_display()
         end
     )
 end
@@ -139,7 +153,6 @@ network:buttons(
             {},
             3,
             function()
-                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
                 awful.spawn.with_shell("xfce4-terminal -e speedtest")
             end
         )

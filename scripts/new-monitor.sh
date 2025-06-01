@@ -2,35 +2,49 @@
 
 STATE_FILE="/tmp/connected-screens"
 
-# Get system uptime in seconds
-UPTIME=$(cut -d. -f1 /proc/uptime)
+# Wait until a monitor event occurs
+inotifywait -e create /tmp | while read path action file; do
+  [ "$file" != "hw-event.trigger" ] && continue
 
-# Get connected outputs, excluding internal display
-CURRENT=$(xrandr --query | grep ' connected' | awk '{print $1}' | sort)
+  # Clean up
+  rm -f /tmp/hw-event.trigger
 
-# If no previous state, store current and exit
-if [ ! -f "$STATE_FILE" ]; then
-    echo "$CURRENT" >"$STATE_FILE"
-    exit 0
-fi
+  echo "tet"
 
-PREVIOUS=$(cat "$STATE_FILE")
-echo "$CURRENT" >"$STATE_FILE"
+  # Get last hw-event and extract type
+  line=$(tail -n 1 /tmp/hw-events.log)
+  timestamp=$(echo "$line" | awk '{print $1}')
+  type=$(echo "$line" | awk '{print $2}')
 
-# Compare to detect new and removed screens
-NEW=$(comm -13 <(echo "$PREVIOUS") <(echo "$CURRENT"))
-REMOVED=$(comm -23 <(echo "$PREVIOUS") <(echo "$CURRENT"))
+  [ "$type" != "monitor" ] && continue
 
-# Only notify and react if system has been up > 10s
-if [ "$UPTIME" -gt 10 ]; then
-    if [ -n "$REMOVED" ]; then
-        notify-send "🖥️ Monitor(s) disconnected:" "$REMOVED"
-        autorandr --change
-    fi
+  # Get current monitor setup (sorted list of connected outputs)
+  CURRENT=$(xrandr --query | grep ' connected' | awk '{print $1}' | sort)
 
-    if [ -n "$NEW" ]; then
-        notify-send "🖥️ New screen detected:\n$NEW" "\n to save screen setup: \nautorandr --save setup_name"
-        autorandr --change
-        arandr
-    fi
-fi
+  # First run: store and exit
+  if [ ! -f "$STATE_FILE" ]; then
+      echo "$CURRENT" >"$STATE_FILE"
+      exit 0
+  fi
+
+  PREVIOUS=$(cat "$STATE_FILE")
+  echo "$CURRENT" >"$STATE_FILE"
+
+  # Compare
+  NEW=$(comm -13 <(echo "$PREVIOUS") <(echo "$CURRENT"))
+  REMOVED=$(comm -23 <(echo "$PREVIOUS") <(echo "$CURRENT"))
+
+  if [ -n "$REMOVED" ]; then
+      notify-send "🖥️ Monitor(s) disconnected:" "$REMOVED"
+      autorandr --change
+  fi
+
+  if [ -n "$NEW" ]; then
+      notify-send "🖥️ New screen detected:\n$NEW" "\nTo save setup: \nautorandr --save setup_name"
+      autorandr --change
+      arandr &
+  fi
+
+  # One event processed, then exit
+  exit 0
+done

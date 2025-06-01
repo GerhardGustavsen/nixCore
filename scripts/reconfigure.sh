@@ -82,7 +82,7 @@ rebuild() {
 
 update() {
     step "Updating flake.lock in $REPO_DIR…"
-    nix flake update "$REPO_DIR"
+    nix flake update --flake "$REPO_DIR"
     success "Flake.lock updated."
 }
 

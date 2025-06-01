@@ -414,20 +414,50 @@ clientkeys =
                 return
             end
 
-            local scrap_tag = awful.tag.find_by_name(c.screen, "scrap")
-            if not scrap_tag then
-                return
+            -- List of programs to "scrap" instead of close
+            local scrap_classes = {
+                -- Terminals
+                ["Alacritty"] = true,
+                ["kitty"] = true,
+                ["Xfce4-terminal"] = true,
+                ["org.gnome.Terminal"] = true,
+                ["konsole"] = true,
+                ["Terminal"] = true,
+                -- Editors
+                ["code"] = true,
+                ["libreoffice"] = true,
+                ["gedit"] = true,
+                ["mousepad"] = true,
+                ["notepadqq"] = true,
+                ["kate"] = true,
+                -- Browsers
+                ["firefox"] = true,
+                ["brave-browser"] = true,
+                ["chromium"] = true,
+                ["google-chrome"] = true,
+                -- CAD / Design
+                ["org.kde.kicad"] = true,
+                ["Fusion360"] = true
+            }
+
+            local class = c.class or ""
+            if scrap_classes[class] then
+                local scrap_tag = awful.tag.find_by_name(c.screen, "scrap")
+                if scrap_tag then
+                    -- Remove all clients from scrap tag
+                    for _, cl in ipairs(scrap_tag:clients()) do
+                        cl:kill()
+                    end
+                    -- Move focused client to scrap tag
+                    c:move_to_tag(scrap_tag)
+                    return
+                end
             end
 
-            -- Remove all clients from scrap tag
-            for _, cl in ipairs(scrap_tag:clients()) do
-                cl:kill()
-            end
-
-            -- Move focused client to scrap tag
-            c:move_to_tag(scrap_tag)
+            -- Default fallback: close the client
+            c:kill()
         end,
-        {description = "send to scrap pad", group = "client"}
+        {description = "send to scrap or close", group = "client"}
     ),
     -- forcefully close program
     awful.key(

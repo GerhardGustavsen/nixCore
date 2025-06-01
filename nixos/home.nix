@@ -49,8 +49,9 @@
       After = [ "graphical-session.target" ];
     };
     Service = {
+      Type = "oneshot";
       ExecStart = "%h/nixCore/scripts/new-monitor.sh";
-      Restart = "always";
+      Restart = "on-failure";
       RestartSec = 3;
       Environment = "PATH=/run/current-system/sw/bin";
       Group = "users";
@@ -58,19 +59,19 @@
     Install = { WantedBy = [ "default.target" ]; };
   };
 
-  # Autoconnect microcontollers
-  systemd.user.services.mc-connect = {
-    Unit = {
-      Description = "autoconnect to microcontroller";
-      After = [ "graphical-session.target" ];
-    };
-    Service = {
-      ExecStart = "%h/nixCore/scripts/microcontroller-connect.sh";
-      Restart = "on-failure";
-      Environment = "PATH=/run/current-system/sw/bin";
-    };
-    Install = { WantedBy = [ "default.target" ]; };
-  };
+  #  # Autoconnect microcontollers
+  #  systemd.user.services.mc-connect = {
+  #    Unit = {
+  #      Description = "autoconnect to microcontroller";
+  #      After = [ "graphical-session.target" ];
+  #    };
+  #    Service = {
+  #      ExecStart = "%h/nixCore/scripts/microcontroller-connect.sh";
+  #      Restart = "on-failure";
+  #      Environment = "PATH=/run/current-system/sw/bin";
+  #    };
+  #    Install = { WantedBy = [ "default.target" ]; };
+  #  };
 
   # ------------------------------------------------------------------------------------------
   # ----------------------------------------- RICE -------------------------------------------

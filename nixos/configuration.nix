@@ -1,8 +1,15 @@
 { pkgs, ... }:
 
-{
+let
+  rootTriggerScript = pkgs.writeScript "log-hw-event" ''
+    #!${pkgs.runtimeShell}
+    echo "$(date +%s) $1" >> /tmp/hw-events.log
+    touch /tmp/hw-event.trigger
+  '';
+in {
   imports = [ ./hardware-configuration.nix ];
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  programs.command-not-found.enable = false;
 
   # Hostname
   networking.hostName = "nix";
@@ -189,6 +196,24 @@
     };
   };
 
+  # Monitor and usb connection watch:
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="tty", TAG+="systemd", ENV{SYSTEMD_WANTS}="log-usb-event.service"
+    ACTION=="change", SUBSYSTEM=="drm", TAG+="systemd", ENV{SYSTEMD_WANTS}="log-monitor-event.service"
+  '';
+  systemd.services.log-usb-event = {
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${rootTriggerScript} usb";
+    };
+  };
+  systemd.services.log-monitor-event = {
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${rootTriggerScript} monitor";
+    };
+  };
+
   # SYSTEM WIDE PROGRAMS
   # nixpkgs.config.allowUnfree = true; # Allow unfree packages
   environment.systemPackages = with pkgs; [
@@ -219,6 +244,7 @@
     # Small programs:
     rofi # Application launcer
     dunst # notification daemon
+    xfce.xfce4-notifyd # another one
     flameshot # screenshot app
     pavucontrol # Audio controll
     polkit_gnome # GUI for user auth
@@ -250,6 +276,7 @@
     usbutils
     lsof
     pciutils
+    inotify-tools
   ];
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯
