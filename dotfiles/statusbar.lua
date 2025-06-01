@@ -3,8 +3,6 @@ local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
 
-local naughty = require("naughty")
-
 local statusbar = {}
 
 ------------------------------------------------------------------------------------------------------------
@@ -31,80 +29,7 @@ local function icon_text(icon, widget)
 end
 
 ------------------------------------------------------------------------------------------------------------
-------------------------------------------------- ETHERNET -------------------------------------------------
-------------------------------------------------------------------------------------------------------------
-
-local net_ethernet = wibox.widget.textbox()
-local function update_net_ethernet()
-    local handle = io.popen("ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1")
-    local ip = handle:read("*all"):gsub("%s+", "")
-    handle:close()
-    local text = ip ~= "" and ("🔌 " .. ip) or ""
-    net_ethernet.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
-end
-gears.timer {timeout = 10, autostart = true, callback = update_net_ethernet}
-gears.timer.delayed_call(update_net_ethernet)
-
-------------------------------------------------------------------------------------------------------------
-------------------------------------------------- WIFI -----------------------------------------------------
-------------------------------------------------------------------------------------------------------------
-
-local net_wireless = wibox.widget.textbox()
-local function update_net_wireless()
-    awful.spawn.easy_async_with_shell(
-        [[
-            nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}'
-        ]],
-        function(stdout)
-            local signal, ssid = stdout:match("(%d+)%s+(.*)")
-            local text
-            if signal and ssid and ssid ~= "" then
-                local signal_num = tonumber(signal)
-                local color = beautiful.fg_normal
-                if signal_num < 20 then
-                    color = color_bad
-                elseif signal_num < 50 then
-                    color = color_degraded
-                else
-                    color = color_good
-                end
-                text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
-            else
-                text = "<span foreground='" .. color_bad .. "'>󰖪 </span>"
-            end
-            net_wireless.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
-        end
-    )
-end
-gears.timer {
-    timeout = 5,
-    autostart = true,
-    callback = update_net_wireless
-}
-gears.timer.delayed_call(update_net_wireless)
-net_wireless:buttons(
-    gears.table.join(
-        awful.button(
-            {},
-            1,
-            function()
-                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
-                awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
-            end
-        ),
-        awful.button(
-            {},
-            3,
-            function()
-                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
-                awful.spawn.with_shell("xfce4-terminal -e speedtest")
-            end
-        )
-    )
-)
-
-------------------------------------------------------------------------------------------------------------
-------------------------------------------------- MOBILE ---------------------------------------------------
+------------------------------------------------- NETWORK ---------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
 local network = wibox.widget.textbox()
@@ -278,6 +203,60 @@ network:buttons(
 )
 
 ------------------------------------------------------------------------------------------------------------
+------------------------------------------------- BLUETOOTH ------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local bluetooth = wibox.widget.textbox()
+
+local function update_bluetooth()
+    awful.spawn.easy_async_with_shell(
+        [[bluetoothctl show; bluetoothctl devices Connected]],
+        function(stdout)
+            local powered = stdout:match("Powered: yes")
+            local connected = select(2, stdout:gsub("Device", "")) - 1
+
+            local icon_char = powered and "󰂯" or "󰂲"
+            local color = not powered and color_degraded or (connected > 0 and color_good or beautiful.fg_normal)
+
+            local icon_markup =
+                string.format(
+                "<span font='%s' foreground='%s' size='13pt' rise='3000'>%s</span>",
+                beautiful.font,
+                color,
+                icon_char
+            )
+
+            local number_markup = ""
+            if powered and connected > 0 then
+                number_markup =
+                    string.format("<span font='%s' foreground='%s'> %d</span>", beautiful.font, color, connected)
+            end
+
+            bluetooth.markup = icon_markup .. number_markup
+        end
+    )
+end
+
+gears.timer {
+    timeout = 3,
+    autostart = true,
+    callback = update_bluetooth
+}
+gears.timer.delayed_call(update_bluetooth)
+
+bluetooth:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("blueman-manager", false)
+            end
+        )
+    )
+)
+
+------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- SYS MONITOR ----------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
@@ -441,60 +420,6 @@ volume:buttons(
 )
 _G.update_volume_icon = update_volume
 gears.timer.delayed_call(update_volume)
-
-------------------------------------------------------------------------------------------------------------
-------------------------------------------------- BLUETOOTH ------------------------------------------------
-------------------------------------------------------------------------------------------------------------
-
-local bluetooth = wibox.widget.textbox()
-
-local function update_bluetooth()
-    awful.spawn.easy_async_with_shell(
-        [[bluetoothctl show; bluetoothctl devices Connected]],
-        function(stdout)
-            local powered = stdout:match("Powered: yes")
-            local connected = select(2, stdout:gsub("Device", "")) - 1
-
-            local icon_char = powered and "󰂯" or "󰂲"
-            local color = not powered and color_degraded or (connected > 0 and color_good or beautiful.fg_normal)
-
-            local icon_markup =
-                string.format(
-                "<span font='%s' foreground='%s' size='13pt' rise='3000'>%s</span>",
-                beautiful.font,
-                color,
-                icon_char
-            )
-
-            local number_markup = ""
-            if powered and connected > 0 then
-                number_markup =
-                    string.format("<span font='%s' foreground='%s'> %d</span>", beautiful.font, color, connected)
-            end
-
-            bluetooth.markup = icon_markup .. number_markup
-        end
-    )
-end
-
-gears.timer {
-    timeout = 3,
-    autostart = true,
-    callback = update_bluetooth
-}
-gears.timer.delayed_call(update_bluetooth)
-
-bluetooth:buttons(
-    gears.table.join(
-        awful.button(
-            {},
-            1,
-            function()
-                awful.spawn("blueman-manager", false)
-            end
-        )
-    )
-)
 
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- BATTERY --------------------------------------------------
