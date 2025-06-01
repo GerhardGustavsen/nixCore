@@ -3,6 +3,8 @@ local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
 
+local naughty = require("naughty")
+
 local statusbar = {}
 
 ------------------------------------------------------------------------------------------------------------
@@ -60,7 +62,7 @@ local function update_net_combined()
             if #parts == 0 then
                 network.markup = string.format("<span font='%s'>🚫 No internet</span>", beautiful.font)
             else
-                local final = table.concat(parts, "  ")
+                local final = table.concat(parts, " ")
                 network.markup = string.format("<span font='%s'>%s</span>", beautiful.font, final)
             end
         end
@@ -141,10 +143,13 @@ local function update_net_combined()
             awful.spawn.easy_async_with_shell(
                 "mmcli -m " .. modem_path,
                 function(stdout)
+                    stdout = stdout:gsub("\27%[[%d;]*m", "")
+
+                    local connected = stdout:match("Status.-\n.-state:%s+(%w+)")
                     local signal = stdout:match("signal quality:%s+(%d+)")
                     local tech = stdout:match("access tech:%s+([^\n]+)")
 
-                    if signal and tech then
+                    if connected == "connected" and signal and tech then
                         tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
                         if tech == "lte" then
                             tech = "4G"
@@ -169,7 +174,10 @@ local function update_net_combined()
                         end
 
                         result.mobile_text = string.format("<span foreground='%s'>%s</span>", color, tech)
+                    else
+                        result.mobile_text = "" -- not connected, don't display
                     end
+
                     result.mobile_done = true
                     try_display()
                 end
