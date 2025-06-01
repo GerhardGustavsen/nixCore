@@ -8,9 +8,13 @@ RED="\033[1;31m"
 RESET="\033[0m"
 
 # -------------------- Functions --------------------
+
 step() { echo -e "${PURPLE}[  ▶▶  ]${RESET} $1"; }
+
 success() { echo -e "${GREEN}[  OK  ]${RESET} $1"; }
+
 error() { echo -e "${RED}[  !!  ]${RESET} $1"; }
+
 copy() {
     local src="$1" dest="$2"
     mkdir -p "$(dirname "$dest")"
@@ -18,12 +22,36 @@ copy() {
         success "Copied $src → $dest"
     else error "ERROR: failed to copy $src → $dest" >&2; fi
 }
+
 link() {
     local target="$1" dest="$2"
     mkdir -p "$(dirname "$dest")"
     if ln -sf "$target" "$dest"; then
         success "Linked $dest → $target"
     else error "ERROR: failed to link $dest → $target" >&2; fi
+}
+
+kill_clients_on_workspace() {
+  local tag="$1"
+  awesome-client <<EOF
+for _, c in ipairs(client.get()) do
+  if c.first_tag and c.first_tag.name == "${tag}" then
+    c:kill()
+  end
+end
+EOF
+}
+
+save_visible_tags() {
+  : > /tmp/awesome-visible-tags
+  for screen in $(seq 1 5); do
+    raw_output=$(awesome-client "return (screen[${screen}] and screen[${screen}].selected_tag and screen[${screen}].selected_tag.name) or ''" 2>/dev/null)
+    tag=$(printf "%s" "$raw_output" | sed -n 's/.*"\(.*\)".*/\1/p')
+    tag=$(printf "%s" "$tag" | tr -d '"\n ')
+    if [ -n "$tag" ]; then
+      echo "${screen}:${tag}" >> /tmp/awesome-visible-tags
+    fi
+  done
 }
 
 # -------------------- Paths --------------------
@@ -57,14 +85,18 @@ reload() {
     chmod +x "$EXE/"*
 
     if [ -n "${DISPLAY-}" ] && command -v awesome-client &>/dev/null; then
-        echo "Reloading AwesomeWM configuration..."
-        awesome-client 'awesome.restart()'
-        echo "AwesomeWM restarted."
+        step "Killing programs on hidden workspaces..."
+        kill_clients_on_workspace scrap
+        kill_clients_on_workspace preload
+        success "All programs successfully murdered"
+        step "Saving visible tags per screen..."
+        save_visible_tags
+        step "Reloading AwesomeWM configuration..."
+        success "\033[1;32mAll done!"
+        awesome-client 'awesome.restart()' >/dev/null 2>&1
     else
-        echo "Not in an X session or awesome-client not found; skipping AwesomeWM reload."
+        error "Not in an X session or awesome-client not found; skipping AwesomeWM reload."
     fi
-
-    success "System reloaded."
 }
 
 rebuild() {

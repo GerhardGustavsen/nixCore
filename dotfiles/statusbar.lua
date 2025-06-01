@@ -3,8 +3,6 @@ local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
 
-local naughty = require("naughty")
-
 local statusbar = {}
 
 ------------------------------------------------------------------------------------------------------------
@@ -406,12 +404,12 @@ local function update_volume()
         "env XDG_RUNTIME_DIR=/run/user/$(id -u) wpctl get-volume @DEFAULT_SINK@",
         function(stdout, _, _, exitcode)
             if exitcode ~= 0 or not stdout then
-                volume.markup = string.format("<span font='%s' size='13pt' rise='8000'>󰟢 </span>", beautiful.font)
+                volume.markup = string.format("<span font='%s' size='13pt' rise='7000'>󰟢 </span>", beautiful.font)
                 return
             end
             local muted = stdout:match("MUTED")
             local icon = muted and "󰸈 " or "󰕾 "
-            volume.markup = string.format("<span font='%s' size='13pt' rise='8000'>%s</span>", beautiful.font, icon)
+            volume.markup = string.format("<span font='%s' size='13pt' rise='7000'>%s</span>", beautiful.font, icon)
         end
     )
 end
@@ -515,7 +513,7 @@ clock:buttons(
 local function sep()
     return wibox.widget {
         markup = string.format(
-            "<span font='%s' foreground='%s' size='13pt' rise='8000'> ❮ </span>",
+            "<span font='%s' foreground='%s' size='13pt' rise='9000'> ❮ </span>",
             beautiful.font,
             "#8700ff"
         ),

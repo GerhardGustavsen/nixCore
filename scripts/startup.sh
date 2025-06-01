@@ -15,6 +15,8 @@ systemctl --user restart mc-connect.service
 
 # Set the cursor so its not perpetually loading
 xsetroot -cursor_name left_ptr
+sleep 0.1
+xsetroot -cursor_name left_ptr
 
 # Diable middle mouse btn on maousepad:
 # spawn.once({"xinput", "set-button-map", "13", "1", "0", "3", "4", "5", "6", "7"})

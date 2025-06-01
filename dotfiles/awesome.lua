@@ -148,7 +148,7 @@ awful.screen.connect_for_each_screen(
         )
 
         -- Statusbar
-        s.mywibox = awful.wibar({position = "top", screen = s})
+        s.mywibox = awful.wibar({position = "top", screen = s, height = 22})
         s.mywibox:setup {
             layout = wibox.layout.align.horizontal,
             {
@@ -724,8 +724,50 @@ client.connect_signal("property::fullscreen", update_client_decoration)
 ------------------------------------------------- STARTUP --------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
+-- Get back to old TAG if reloaded
+gears.timer {
+    timeout = 0,
+    autostart = true,
+    single_shot = true,
+    callback = function()
+        local f = io.open("/tmp/awesome-visible-tags", "r")
+        if not f then
+            return
+        end
+
+        local restore_map = {}
+        local lines = {}
+        for line in f:lines() do
+            table.insert(lines, line)
+            local screen_id, tag_name = line:match("^(%d+):(.+)$")
+            if screen_id and tag_name then
+                restore_map[tonumber(screen_id)] = tag_name
+            end
+        end
+        f:close()
+
+        for s in screen do
+            local i = s.index
+            local wanted = restore_map[i]
+            if wanted then
+                local found = false
+                for _, t in ipairs(s.tags or {}) do
+                    if t.name == wanted then
+                        t:view_only()
+                        found = true
+                        break
+                    end
+                end
+            end
+        end
+
+        os.remove("/tmp/awesome-visible-tags")
+    end
+}
+
 gears.timer.delayed_call(
     function()
+        -- startupp programs
         awful.spawn.with_shell("/home/gg/nixCore/scripts/startup.sh")
 
         -- Preload firefox
