@@ -3,6 +3,8 @@ local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
 
+local naughty = require("naughty")
+
 local statusbar = {}
 
 ------------------------------------------------------------------------------------------------------------
@@ -28,136 +30,6 @@ local function icon_text(icon, widget)
     }
 end
 
-------------------------------------------------------------------------------------------------------------
-------------------------------------------------- NETWORK -------------------------------------------------
-------------------------------------------------------------------------------------------------------------
-
-local network = wibox.widget.textbox()
-
-local function update_net_combined()
-    local result = {
-        eth_done = false,
-        wifi_done = false,
-        mobile_done = false,
-        eth_text = "",
-        wifi_text = "",
-        mobile_text = ""
-    }
-
-    local function try_display()
-        if result.eth_done and result.wifi_done and result.mobile_done then
-            local parts = {}
-            if result.eth_text ~= "" then
-                table.insert(parts, result.eth_text)
-            end
-            if result.wifi_text ~= "" then
-                table.insert(parts, result.wifi_text)
-            end
-            if result.mobile_text ~= "" then
-                table.insert(parts, result.mobile_text)
-            end
-            if #parts == 0 then
-                table.insert(parts, "🚫 No internet")
-            end
-
-            network.markup = string.format("<span font='%s'>%s</span>", beautiful.font, table.concat(parts, "  "))
-        end
-    end
-
-    -- Ethernet
-    awful.spawn.easy_async_with_shell(
-        "ip -4 -brief addr show dev eth0 | awk '{print $3}' | cut -d'/' -f1",
-        function(eth_stdout)
-            local eth_ip = eth_stdout:gsub("%s+", "")
-            if eth_ip ~= "" then
-                result.eth_text = "🔌 " .. eth_ip
-            end
-            result.eth_done = true
-            try_display()
-        end
-    )
-
-    -- WiFi
-    awful.spawn.easy_async_with_shell(
-        [[nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}']],
-        function(wifi_stdout)
-            local signal, ssid = wifi_stdout:match("(%d+)%s+(.*)")
-            if signal and ssid and ssid ~= "" then
-                local signal_num = tonumber(signal)
-                local color = beautiful.fg_normal
-                if signal_num < 20 then
-                    color = color_bad
-                elseif signal_num < 50 then
-                    color = color_degraded
-                else
-                    color = color_good
-                end
-                result.wifi_text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
-            end
-            result.wifi_done = true
-            try_display()
-        end
-    )
-
-    -- LTE / Mobile
-    awful.spawn.easy_async_with_shell(
-        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']],
-        function(mobile_stdout)
-            local signal, tech = mobile_stdout:match("(%d+)%s+(.*)")
-            if signal and tech then
-                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
-                if tech == "lte" then
-                    tech = "4G"
-                elseif tech:match("hspa") or tech == "umts" then
-                    tech = "3G"
-                elseif tech == "edge" or tech == "gprs" then
-                    tech = "2G"
-                elseif tech:match("5g") then
-                    tech = "5G"
-                else
-                    tech = "E"
-                end
-
-                local signal_num = tonumber(signal)
-                local color = beautiful.fg_normal
-                if signal_num < 10 then
-                    color = color_bad
-                elseif signal_num < 30 then
-                    color = color_degraded
-                else
-                    color = color_good
-                end
-
-                result.mobile_text = string.format("<span foreground='%s'>%s</span>", color, tech)
-            end
-            result.mobile_done = true
-            try_display()
-        end
-    )
-end
-
-gears.timer {timeout = 5, autostart = true, callback = update_net_combined}
-gears.timer.delayed_call(update_net_combined)
-
-network:buttons(
-    gears.table.join(
-        awful.button(
-            {},
-            1,
-            function()
-                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
-                awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
-            end
-        ),
-        awful.button(
-            {},
-            3,
-            function()
-                awful.spawn.with_shell("xfce4-terminal -e speedtest")
-            end
-        )
-    )
-)
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- ETHERNET -------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
@@ -235,48 +107,175 @@ net_wireless:buttons(
 ------------------------------------------------- MOBILE ---------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
-local net_mobile = wibox.widget.textbox()
-local function update_net_mobile()
-    awful.spawn.easy_async_with_shell(
-        [[mmcli -m 0 | awk -F": " '/access tech:/ {tech=$2} /signal quality:/ {print $2, tech}' | tr -d '%' | sed 's/ (recent)//']],
-        function(stdout)
-            local signal, tech = stdout:match("(%d+)%s+(.*)")
-            if tech then
-                tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
-                if tech == "lte" then
-                    tech = "4G"
-                elseif tech == "hspa" or tech == "hsupa" or tech == "hsdpa" or tech == "umts" then
-                    tech = "3G"
-                elseif tech == "edge" or tech == "gprs" then
-                    tech = "2G"
-                elseif tech == "5g" or tech == "5gnr" then
-                    tech = "5G"
-                else
-                    tech = "E"
-                end
+local network = wibox.widget.textbox()
+
+local function update_net_combined()
+    local result = {
+        eth_text = "",
+        wifi_text = "",
+        mobile_text = "",
+        eth_done = false,
+        wifi_done = false,
+        mobile_done = false
+    }
+
+    local function try_display()
+        if result.eth_done and result.wifi_done and result.mobile_done then
+            local parts = {}
+            if result.eth_text ~= "" then
+                table.insert(parts, result.eth_text)
+            end
+            if result.wifi_text ~= "" then
+                table.insert(parts, result.wifi_text)
+            end
+            if result.mobile_text ~= "" then
+                table.insert(parts, result.mobile_text)
             end
 
-            local text
-            if signal and tech then
+            if #parts == 0 then
+                network.markup = string.format("<span font='%s'>🚫 No internet</span>", beautiful.font)
+            else
+                local final = table.concat(parts, "  ")
+                network.markup = string.format("<span font='%s'>%s</span>", beautiful.font, final)
+            end
+        end
+    end
+
+    -- Ethernet
+    local candidate_dev = nil
+
+    -- Step 1: Get candidate Ethernet interface name
+    awful.spawn.easy_async_with_shell(
+        [[ip -o link | awk -F': ' '/^[0-9]+: en/ {print $2}' | head -n1]],
+        function(dev)
+            dev = dev:gsub("%s+", "")
+            candidate_dev = dev
+
+            if dev == "" then
+                result.eth_text = ""
+                result.eth_done = true
+                try_display()
+                return
+            end
+
+            -- Step 2: Check if interface is UP
+            awful.spawn.easy_async_with_shell(
+                "ip link show " .. dev,
+                function(output)
+                    local has_state_up = output:match("state UP")
+                    local has_lower_up = output:match("LOWER_UP")
+
+                    if has_state_up and has_lower_up then
+                        result.eth_text = string.format("<span foreground='%s'>🔌 Ethernet</span>", color_good)
+                    else
+                        result.eth_text = ""
+                    end
+
+                    result.eth_done = true
+                    try_display()
+                end
+            )
+        end
+    )
+
+    -- WiFi
+    awful.spawn.easy_async_with_shell(
+        [[nmcli -t -f IN-USE,SSID,SIGNAL dev wifi | awk -F: '$1=="*"{print $3, $2}']],
+        function(stdout)
+            local signal, ssid = stdout:gsub("%s+$", ""):match("(%d+)%s+(.*)")
+            if signal and ssid and ssid ~= "" then
                 local signal_num = tonumber(signal)
                 local color = beautiful.fg_normal
-                if signal_num < 10 then
+                if signal_num < 20 then
                     color = color_bad
-                elseif signal_num < 30 then
+                elseif signal_num < 50 then
                     color = color_degraded
                 else
                     color = color_good
                 end
-                text = string.format("<span size='12pt' rise='7000' foreground='%s'>%s</span>", color, tech)
-            else
-                text = "<span foreground='" .. color_degraded .. "'></span>"
+                result.wifi_text = string.format("<span foreground='%s'>󰖩 %s%% %s</span>", color, signal, ssid)
             end
-            net_mobile.markup = string.format("<span font='%s'>%s</span>", beautiful.font, text)
+            result.wifi_done = true
+            try_display()
+        end
+    )
+
+    -- LTE — Step 1: Get modem path
+    awful.spawn.easy_async_with_shell(
+        [[mmcli -L | grep -o '/Modem/[0-9]\+' | grep -o '[0-9]\+' | head -n1]],
+        function(modem_path)
+            modem_path = modem_path:gsub("%s+", "")
+
+            if modem_path == "" then
+                result.mobile_done = true
+                try_display()
+                return
+            end
+
+            -- LTE — Step 2: Query modem
+            awful.spawn.easy_async_with_shell(
+                "mmcli -m " .. modem_path,
+                function(stdout)
+                    local signal = stdout:match("signal quality:%s+(%d+)")
+                    local tech = stdout:match("access tech:%s+([^\n]+)")
+
+                    if signal and tech then
+                        tech = tech:lower():gsub("^%s+", ""):gsub("%s+$", "")
+                        if tech == "lte" then
+                            tech = "4G"
+                        elseif tech:match("hspa") or tech == "umts" then
+                            tech = "3G"
+                        elseif tech == "edge" or tech == "gprs" then
+                            tech = "2G"
+                        elseif tech:match("5g") then
+                            tech = "5G"
+                        else
+                            tech = "E"
+                        end
+
+                        local signal_num = tonumber(signal)
+                        local color = beautiful.fg_normal
+                        if signal_num < 10 then
+                            color = color_bad
+                        elseif signal_num < 30 then
+                            color = color_degraded
+                        else
+                            color = color_good
+                        end
+
+                        result.mobile_text = string.format("<span foreground='%s'>%s</span>", color, tech)
+                    end
+                    result.mobile_done = true
+                    try_display()
+                end
+            )
         end
     )
 end
-gears.timer {timeout = 5, autostart = true, callback = update_net_mobile}
-gears.timer.delayed_call(update_net_mobile)
+
+gears.timer {timeout = 5, autostart = true, callback = update_net_combined}
+gears.timer.delayed_call(update_net_combined)
+
+network:buttons(
+    gears.table.join(
+        awful.button(
+            {},
+            1,
+            function()
+                awful.spawn("xfce4-terminal --title 'nmtui-popup' --geometry=110x40 -e nmtui", false)
+                awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
+            end
+        ),
+        awful.button(
+            {},
+            3,
+            function()
+                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
+                awful.spawn.with_shell("xfce4-terminal -e speedtest")
+            end
+        )
+    )
+)
 
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- SYS MONITOR ----------------------------------------------
