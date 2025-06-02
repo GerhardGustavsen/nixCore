@@ -5,9 +5,15 @@ set -euo pipefail
 DEV="intel_backlight"           # Device (brightnessctl -l # to list all devices)
 DIR="$1"                        # user inputt {up | down}
 CUR=$(brightnessctl get "$DEV") # get current brightness
+MAX=$(brightnessctl -d "$DEV" max)
 
 # Define brightness levels
-levels=(0 1 100 3000 7500)
+user_steps=(0 1 100 500 1000)
+
+levels=()
+for step in "${user_steps[@]}"; do
+  levels+=( $(( step * MAX / 1000 )) )
+done
 
 NEW_VAL=$(brightnessctl max "$DEV")
 for ((i = 0; i < ${#levels[@]}; i++)); do
