@@ -37,7 +37,7 @@ theme.border_marked = "#FF0000" -- marked window border (used rarely)
 
 -- rounded corners
 theme.client_shape = function(cr, width, height)
-    gears.shape.rounded_rect(cr, width, height, 2) -- 8px radius; adjust if needed
+    gears.shape.rounded_rect(cr, width, height, 3) -- 8px radius; adjust if needed
 end
 
 -- There are other variable sets

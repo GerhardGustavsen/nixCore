@@ -5,12 +5,6 @@ program_options:
   automount: true # Enable automatic mounting
   file_manager: thunar # Program to open mounted directories
 
-# Customize which notifications are shown for how long. Possible
-# values are:
-#   positive number         timeout in seconds
-#   false                   disable
-#   -1                      use the libnotify default timeout
-
 notifications:
   timeout: 1.5 # Notification timeout in seconds
   device_mounted: false # Show mount notifications for 5 seconds
@@ -20,3 +14,7 @@ notifications:
   device_unlocked: -1 # encrypted device was unlocked
   device_locked: -1 # encrypted device was locked
   job_failed: -1 # mount/unlock/.. has failed
+
+device_config:
+  - device_file: /dev/sda # hides sd card reader
+    ignore: true

@@ -3,8 +3,7 @@
 let
   rootTriggerScript = pkgs.writeScript "log-hw-event" ''
     #!${pkgs.runtimeShell}
-    echo "$(date +%s) $1" >> /tmp/hw-events.log
-    touch /tmp/hw-event.trigger
+    touch "/tmp/hw-trigger-$(date +%s)-$1"
   '';
 in {
   imports = [ ./hardware-configuration.nix ];
@@ -274,6 +273,7 @@ in {
     lsof
     pciutils
     inotify-tools
+    coreutils
   ];
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯
