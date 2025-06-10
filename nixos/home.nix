@@ -91,6 +91,7 @@
     steam
     kicad-small
     discord
+    freecad
 
     # Editors:
     vscode

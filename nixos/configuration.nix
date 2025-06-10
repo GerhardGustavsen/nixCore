@@ -217,6 +217,7 @@ in {
   environment.systemPackages = with pkgs; [
     # Terminal:
     xfce.xfce4-terminal
+    mesa
     vim
 
     # Mobile internett:
@@ -224,6 +225,7 @@ in {
 
     # Backupp browser:
     chromium
+
     # Multi monitor support:
     arandr
     autorandr
