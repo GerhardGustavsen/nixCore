@@ -83,6 +83,7 @@ in {
       autoLogin.user = "gg";
     };
   };
+  programs.i3lock.enable = true;
 
   # Fonts
   fonts.packages = with pkgs; [

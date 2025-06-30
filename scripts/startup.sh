@@ -19,5 +19,7 @@ autorandr --change
 xsetroot -cursor_name left_ptr
 sleep 0.1
 xsetroot -cursor_name left_ptr
+sleep 0.1
+xsetroot -cursor_name left_ptr
 
 exit 0
