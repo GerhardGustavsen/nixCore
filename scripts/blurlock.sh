@@ -3,9 +3,12 @@
 # One positional argument: blur radius (default to 2)
 RADIUS=0x${1:-2}
 
-# Use magick for everything (avoid convert entirely)
-xwd -root -silent | magick xwd:- -scale 20% -blur "$RADIUS" -resize 500% /tmp/screenshot.png
+# Output image path
+IMG=/tmp/screenshot.png
 
-# Lock screen
-i3lock -i /tmp/screenshot.png
-exit 0
+# Capture screen with maim and blur it
+dunstify -u normal -t 1000 -h string:fgcolor:#00ffff "🔒 Locking Computer..."
+maim -u | magick - -scale 20% -blur "$RADIUS" -resize 500% "$IMG"
+
+# Lock screen with blurred image
+i3lock -i "$IMG"

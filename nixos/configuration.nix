@@ -277,6 +277,7 @@ in {
     pciutils
     inotify-tools
     coreutils
+    maim
   ];
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯
