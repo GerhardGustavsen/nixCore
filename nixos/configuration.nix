@@ -184,6 +184,13 @@ in {
     enable = true;
     settings.vsync = true;
   };
+  hardware.graphics = { enable = true; };
+  services.xserver.videoDrivers = [ "nvidia" ];
+  hardware.nvidia = {
+    modesetting.enable = true;
+    nvidiaSettings = true;
+    open = false;
+  };
 
   # Nix garbage collection
   nix = {
@@ -214,11 +221,10 @@ in {
   };
 
   # SYSTEM WIDE PROGRAMS
-  # nixpkgs.config.allowUnfree = true; # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
     # Terminal:
     xfce.xfce4-terminal
-    mesa
     vim
 
     # Mobile internett:
