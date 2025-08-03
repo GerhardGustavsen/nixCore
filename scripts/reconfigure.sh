@@ -119,8 +119,8 @@ update() {
 }
 
 upgrade() {
-    do_update
-    do_rebuild
+    update
+    rebuild
 }
 
 # -------------------- Entry Point --------------------
