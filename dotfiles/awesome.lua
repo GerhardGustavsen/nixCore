@@ -656,7 +656,14 @@ awful.rules.rules = {
     -- Battery warnings:
     {
         rule = {name = "battery_warnning_popup"},
-        properties = {floating = true, placement = awful.placement.centered, width = 1000, height = 200, ontop = true}
+        properties = {
+            floating = true,
+            placement = awful.placement.centered,
+            width = 1000,
+            height = 200,
+            ontop = true,
+            sticky = true
+        }
     },
     -- Terminals:
     {
