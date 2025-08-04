@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-THRESHOLD=15
+THRESHOLD=5
 BATTERY_PATH="/sys/class/power_supply/BAT0/capacity"
 POPUP_EXEC="$HOME/nixCore/batNotify/battery_popup.run"
 INTERVAL=60  # seconds between checks — edit this to control frequency
