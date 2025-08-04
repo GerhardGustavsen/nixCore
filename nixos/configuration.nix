@@ -264,6 +264,7 @@ in {
 
     # Coding resources:
     python3
+    gcc
     poetry
     nixfmt-classic # Nix formatter
 

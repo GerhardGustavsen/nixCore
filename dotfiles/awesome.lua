@@ -653,6 +653,11 @@ awful.rules.rules = {
         rule = {name = "popup"},
         properties = {floating = true, placement = awful.placement.centered, width = 1000, height = 800, ontop = true}
     },
+    -- Battery warnings:
+    {
+        rule = {name = "battery_warnning_popup"},
+        properties = {floating = true, placement = awful.placement.centered, width = 1000, height = 200, ontop = true}
+    },
     -- Terminals:
     {
         rule_any = {class = {"Xfce4-terminal", "XTerm", "URxvt", "Alacritty", "kitty", "st"}},
