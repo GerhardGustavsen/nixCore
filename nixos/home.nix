@@ -42,15 +42,15 @@
   #  Install = { WantedBy = [ "default.target" ]; };
   #};
 
-  # Autoconnect monitors and microcontollers
-  systemd.user.services.new-device = {
+  # Handle hardware events
+  systemd.user.services.hw-events = {
     Unit = {
-      Description = "autoconnect monitors and microcontollers";
+      Description = "handle all hardware events";
       After = [ "graphical-session.target" ];
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "%h/nixCore/scripts/hardware-connect.sh";
+      ExecStart = "%h/nixCore/scripts/hardware-events.sh";
       Restart = "on-failure";
       RestartSec = 10;
       Environment = "PATH=/run/current-system/sw/bin";

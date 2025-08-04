@@ -4,6 +4,7 @@
 unclutter -idle 1 -jitter 2 -root &
 
 # Set upp screenlock
+xhost +SI:localuser:gg # i donno if needed
 LOCK="$HOME/nixCore/scripts/blurlock.sh"
 xidlehook --not-when-audio --not-when-fullscreen --timer 400 "$LOCK" '' &
 
@@ -12,7 +13,7 @@ pkill udiskie
 sleep 0.1 && udiskie &
 
 # Restart services so they see enviroment varriables:
-systemctl --user restart new-device.service
+systemctl --user restart hw-events.service
 
 # Detect anc change screen setupp
 autorandr --change

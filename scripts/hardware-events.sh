@@ -71,4 +71,8 @@ inotifywait -mq -e create /tmp | while read -r path action file; do
     handle_usb
   fi
 
+  if [ "$type" == "sleep" ]; then
+    $HOME/nixCore/scripts/blurlock.sh
+  fi
+
 done

@@ -213,6 +213,8 @@ in {
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="tty", TAG+="systemd", ENV{SYSTEMD_WANTS}="log-usb-event.service"
     ACTION=="change", SUBSYSTEM=="drm", TAG+="systemd", ENV{SYSTEMD_WANTS}="log-monitor-event.service"
+    ACTION=="change", KERNEL=="lid*", SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="0", \
+      TAG+="systemd", ENV{SYSTEMD_USER_WANTS}="log-on-lid.service"
   '';
   systemd.services.log-usb-event = {
     serviceConfig = {
@@ -224,6 +226,16 @@ in {
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${rootTriggerScript} monitor";
+    };
+  };
+  systemd.services.log-on-lid = {
+    description = "Delay suspend to allow screen lock";
+    before = [ "sleep.target" ];
+    wantedBy = [ "sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart =
+        "${pkgs.bash}/bin/bash -c '${rootTriggerScript} sleep; sleep 3'";
     };
   };
 

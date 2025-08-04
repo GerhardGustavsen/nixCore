@@ -11,4 +11,5 @@ dunstify -u normal -t 700 -h string:fgcolor:#00ffff "🔒 Locking Computer..."
 maim -u | magick - -scale 10% -blur "$RADIUS" -resize 1000% "$IMG"
 
 # Lock screen with blurred image
+
 i3lock -i "$IMG"
