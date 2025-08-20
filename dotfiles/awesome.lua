@@ -72,6 +72,24 @@ local function set_wallpaper(s)
 end
 screen.connect_signal("property::geometry", set_wallpaper)
 
+-- listen for external requests to change bar bg
+awesome.connect_signal(
+    "mode::bar_bg",
+    function(color)
+        if not color or type(color) ~= "string" then
+            return
+        end
+        -- update theme value so newly created widgets use it too
+        beautiful.bg_normal = color
+        -- update existing bars
+        for s in screen do
+            if s.mywibox then
+                s.mywibox.bg = color
+            end
+        end
+    end
+)
+
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- TILING ---------------------------------------------------
 ------------------------------------------------------------------------------------------------------------

@@ -30,18 +30,6 @@
   # ----------------------------------------- SERVICES ---------------------------------------
   # ------------------------------------------------------------------------------------------
 
-  # Battery notify
-  #systemd.user.services.battery-warn = {
-  #  Unit = { Description = "Battery warning via dunst"; };
-  #  Service = {
-  #    ExecStart = "%h/scripts/battery-warn.sh";
-  #    Restart = "always";
-  #    Group = "users";
-  #    RestartSec = 10;
-  #  };
-  #  Install = { WantedBy = [ "default.target" ]; };
-  #};
-
   # Handle hardware events
   systemd.user.services.hw-events = {
     Unit = {
@@ -55,6 +43,23 @@
       RestartSec = 10;
       Environment = "PATH=/run/current-system/sw/bin";
       Group = "users";
+    };
+    Install = { WantedBy = [ "default.target" ]; };
+  };
+
+  # Sleep inhibetor service
+  systemd.user.services.awake = {
+    Unit = {
+      Description = "Keep laptop awake (block suspend + lid close)";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart =
+        "${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep:handle-lid-switch --mode=block --why='server mode' ${pkgs.coreutils}/bin/sleep infinity";
+      # If you stop it, it stays stopped. No Restart.
+      Environment = "PATH=/run/current-system/sw/bin";
     };
     Install = { WantedBy = [ "default.target" ]; };
   };
@@ -169,6 +174,12 @@
           "78272b6fa58f4a1abaac99321d503a20@proton.me" = {
             install_url =
               "https://addons.mozilla.org/firefox/downloads/latest/proton-pass/latest.xpi";
+            installation_mode = "force_installed";
+          };
+          # Proton VPN:
+          "vpn@proton.ch" = {
+            install_url =
+              "https://addons.mozilla.org/firefox/downloads/file/4539502/proton_vpn_firefox_extension-1.2.9.xpi";
             installation_mode = "force_installed";
           };
           # Theme:

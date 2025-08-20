@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   rootTriggerScript = pkgs.writeScript "log-hw-event" ''
@@ -36,6 +36,7 @@ in {
     };
     timeout = 1;
   };
+  boot.blacklistedKernelModules = [ "nouveau" ]; # to get eGPU to work
   swapDevices = [{
     device = "/var/lib/swapfile";
     size = 16 * 1024;
@@ -128,7 +129,10 @@ in {
   # Filemanager
   programs.thunar.enable = true;
   programs.xfconf.enable = true;
-  programs.thunar.plugins = with pkgs.xfce; [ thunar-archive-plugin ];
+  programs.thunar.plugins = with pkgs.xfce; [
+    thunar-archive-plugin
+    thunar-volman
+  ];
   services.gvfs.enable = true; # Mount, trash, and other functionalities
   services.tumbler.enable = true; # Thumbnail support for images
   services.udisks2.enable = true; # AutoMount backend
@@ -171,12 +175,25 @@ in {
 
   # Security
   security.polkit.enable = true; # managing user premitions
+  security.sudo.extraRules = [{
+    users = [ "gg" ];
+    commands = [
+      {
+        command = "/run/current-system/sw/bin/systemctl start sshd";
+        options = [ "NOPASSWD" ];
+      }
+      {
+        command = "/run/current-system/sw/bin/systemctl stop sshd";
+        options = [ "NOPASSWD" ];
+      }
+    ];
+  }];
   programs.dconf.enable = true; # somthing, something, keys...
-  # services.pcscd.enable = true; # Smart card... I donno
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
   };
+  networking.firewall.allowedTCPPorts = [ 22 ]; # for sshd
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support
@@ -187,25 +204,35 @@ in {
   hardware.graphics = { enable = true; };
   services.xserver.videoDrivers = [ "intel" ]; # "nvidia" ];
   hardware.nvidia = {
+    package = config.boot.kernelPackages.nvidia_x11;
     modesetting.enable = true;
     nvidiaSettings = true;
-    open = true;
+    open = false;
+    powerManagement.enable = true;
 
-    # prime = {
-    #   sync.enable = true;
-    #   # Make sure to use the correct Bus ID values for your system!
-    #   intelBusId = "PCI:0:2:0";
-    #   nvidiaBusId = "PCI:12:0:0";
-    # };
+    prime = {
+      offload.enable = true;
+      sync.enable = false;
+      # Make sure to use the correct Bus ID values for your system!
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:12:0:0";
+    };
   };
 
-  # Nix garbage collection
+  # Nix garbage collection (monthly, keep only last 30 days)
   nix = {
-    settings.auto-optimise-store = true;
+    settings = {
+      auto-optimise-store = true; # dedupe identical files
+      # Optional: make GC more aggressive (frees more space):
+      # keep-outputs = false;
+      # keep-derivations = false;
+    };
+
     gc = {
       automatic = true;
-      dates = "monthly"; # You can change this to "daily" if you want
-      options = "--delete-older-than 14d"; # Keep only the last 2 weeks
+      dates = "monthly";
+      options = "--delete-older-than 30d";
+      # persistent = true; # (default is true; ensures missed runs happen later)
     };
   };
 
@@ -242,6 +269,8 @@ in {
   # SYSTEM WIDE PROGRAMS
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
+    config.boot.kernelPackages.nvidia_x11
+
     # Terminal:
     xfce.xfce4-terminal
     vim
@@ -304,8 +333,12 @@ in {
     coreutils
     maim
     lshw
-    sshfs # accsess to folk.NTNU
+    sshfs # acsess to folk.NTNU
     xidlehook # autolocker
+    ntfs3g # Windows filesystem
+    file-roller # zip and unzip for thunar
+    mesa-demos # GPU utils
+    nftables # Filefwall tools
   ];
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯
@@ -322,7 +355,7 @@ in {
   # services.xserver.libinput.enable = true;
 
   # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
+
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether. 
 

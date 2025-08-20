@@ -4,6 +4,9 @@
 exec >> /tmp/startup_debug.log 2>&1
 echo "Startup script started at $(date)"
 
+# Select mode
+$HOME/nixCore/scripts/mode-set.sh &
+
 # Start battery monitor
 rm /tmp/battery_warning_shown
 $HOME/nixCore/scripts/battery-monitor.sh &

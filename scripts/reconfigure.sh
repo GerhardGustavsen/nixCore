@@ -82,6 +82,7 @@ reload() {
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"
     link "$CORESCR/blurlock.sh" "$EXE/lock"
     link "$CORESCR/microcontroller-flash.sh" "$EXE/mcflash"
+    link "$CORESCR/mode.sh" "$EXE/mode"
     chmod +x "$EXE/"*
 
     if [ -n "${DISPLAY-}" ] && command -v awesome-client &>/dev/null; then
