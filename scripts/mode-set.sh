@@ -8,8 +8,16 @@ SERVICE="awake.service"
 SERVER_COLOR="#002199"   # blue in server mode
 NORMAL_COLOR="#151515"   # your theme.bg_normal
 
-# --- helpers ---
-err() { printf 'ERROR: %s\n' "$*" >&2; }
+# Txt colors
+RED="\033[91m"    # bright red
+GREEN="\033[92m"  # bright green
+YELLOW="\033[93m" # bright yellow
+BLUE="\033[94m"   # bright blue
+RESET="\033[0m"
+
+# Helpers
+err() { printf "${RED}ERROR:${RESET} %s\n" "$*" >&2; }
+warn() { printf "${YELLOW}⚠ %s${RESET}\n" "$*" >&2; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 mode_from_file() {
@@ -56,6 +64,46 @@ set_bar_color() {
   awesome-client "awesome.emit_signal('mode::bar_bg', '$color')" >/dev/null 2>&1 || err "could not signal AwesomeWM"
 }
 
+battery_warning() {
+  [[ "$MODE" != "server" ]] && return 0
+
+  local base="/sys/class/power_supply"
+  local bat dev
+  bat="$(ls "$base" | grep -m1 '^BAT')" || return 0
+  dev="$base/$bat"
+
+  local status capacity power_now energy_now time_left=""
+  status="$(<"$dev/status")" || return 0
+  capacity="$(<"$dev/capacity")" || return 0
+
+  if [[ "$status" == "Discharging" ]]; then
+    if [[ -r "$dev/time_to_empty_now" ]]; then
+      local secs
+      secs="$(<"$dev/time_to_empty_now")"
+      if (( secs > 0 )); then
+        local h=$(( secs / 3600 ))
+        local m=$(( (secs % 3600) / 60 ))
+        time_left="${h} hours & ${m} minutes"
+      fi
+    elif [[ -r "$dev/power_now" && -r "$dev/energy_now" ]]; then
+      power_now="$(<"$dev/power_now")"
+      energy_now="$(<"$dev/energy_now")"
+      if (( power_now > 0 )); then
+        local mins=$(( energy_now * 60 / power_now ))
+        local h=$(( mins / 60 ))
+        local m=$(( mins % 60 ))
+        time_left="${h} hours, ${m} minutes"
+      fi
+    fi
+
+    {
+      warn "Server mode on battery!"
+      warn "  Battery: $capacity%"
+      [[ -n "$time_left" ]] && warn "  Est. time left: $time_left"
+    } >&2
+  fi
+}
+
 # --- apply ---
 MODE="$(mode_from_file)"
 case "$MODE" in
@@ -77,6 +125,12 @@ case "$MODE" in
 esac
 
 # --- concise summary (queried live) ---
-echo "${MODE} mode activated!"
+if [[ "$MODE" == "server" ]]; then
+  echo -e "${BLUE}${MODE} mode activated!${RESET}"
+else
+  echo -e "${GREEN}${MODE} mode activated!${RESET}"
+fi
+
 echo "sleep: $(sleep_status)"
 echo "sshd:  $(sshd_status)"
+battery_warning

@@ -21,6 +21,9 @@ LOCK="$HOME/nixCore/scripts/blurlock.sh"
 xidlehook --not-when-audio --not-when-fullscreen --timer 400 "$LOCK" '' &
 echo "Started idle screen lock"
 
+# Set upp screen off rule
+xset dpms 0 0 600 # Turn off screen after 10min.
+
 # Kill and restart udiskie
 pkill udiskie
 sleep 0.1 && udiskie &
