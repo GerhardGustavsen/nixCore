@@ -5,14 +5,16 @@ STATE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/mode/state"
 SERVICE="awake.service"
 
 # Colors
-SERVER_COLOR="#002199"   # blue in server mode
-NORMAL_COLOR="#151515"   # your theme.bg_normal
+SERVER_COLOR="#002199"      # blue in server mode
+NORMAL_COLOR="#151515"      # your theme.bg_normal
+PERFORMANCE_COLOR="#400050" # red in performance mode
 
 # Txt colors
-RED="\033[91m"    # bright red
-GREEN="\033[92m"  # bright green
-YELLOW="\033[93m" # bright yellow
-BLUE="\033[94m"   # bright blue
+RED="\033[91m"     # bright red
+GREEN="\033[92m"   # bright green
+YELLOW="\033[93m"  # bright yellow
+BLUE="\033[94m"    # bright blue
+ORANGE="\033[95m"  # bright magenta
 RESET="\033[0m"
 
 # Helpers
@@ -56,7 +58,6 @@ safe_stop_inhibitor() {
   fi
 }
 
-# Ask Awesome to change the bar bg (best-effort, no hard fail)
 set_bar_color() {
   local color="$1"
   command -v awesome-client >/dev/null 2>&1 || { err "awesome-client not found; skipping bar color"; return 0; }
@@ -66,7 +67,6 @@ set_bar_color() {
 
 battery_warning() {
   [[ "$MODE" != "server" ]] && return 0
-
   local base="/sys/class/power_supply"
   local bat dev
   bat="$(ls "$base" | grep -m1 '^BAT')" || return 0
@@ -114,6 +114,13 @@ case "$MODE" in
     safe_start_inhibitor
     set_bar_color "$SERVER_COLOR"
     ;;
+  performance)
+    have systemctl || { err "systemctl missing"; exit 1; }
+    have sudo || err "sudo missing (needed to control sshd)"
+    safe_stop_sshd
+    safe_stop_inhibitor
+    set_bar_color "$PERFORMANCE_COLOR"
+    ;;
   normal|*)
     have systemctl || { err "systemctl missing"; exit 1; }
     have sudo || err "sudo missing (needed to control sshd)"
@@ -127,6 +134,8 @@ esac
 # --- concise summary (queried live) ---
 if [[ "$MODE" == "server" ]]; then
   echo -e "${BLUE}${MODE} mode activated!${RESET}"
+elif [[ "$MODE" == "performance" ]]; then
+  echo -e "${ORANGE}${MODE} mode activated!${RESET}"
 else
   echo -e "${GREEN}${MODE} mode activated!${RESET}"
 fi
