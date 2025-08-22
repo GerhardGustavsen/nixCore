@@ -17,8 +17,10 @@ function fish_prompt
 
         # Directory + prompt in high-contrast colors
         printf '\033[38;5;208m[\033[0m'
-        printf '\033[38;5;220m%s@%s\033[0m' $host $server_ip
-        printf '\033[38;5;208m/\033[0m'
+        printf '\033[38;5;220m%s\033[0m' $host
+        printf '\033[38;5;201m@\033[0m'
+        printf '\033[38;5;220m%s\033[0m' $server_ip
+        printf '\033[38;5;201m/\033[0m'
         printf '\033[38;5;220m%s\033[0m' $last_dir
         printf '\033[38;5;208m]\033[0m'
         printf '\033[38;5;220m❯ \033[0m'
