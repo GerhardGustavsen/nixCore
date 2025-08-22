@@ -20,7 +20,7 @@ function fish_prompt
         printf '\033[38;5;220m%s\033[0m' $host
         printf '\033[38;5;196m@\033[0m'
         printf '\033[38;5;220m%s\033[0m' $server_ip
-        printf '\033[38;5;220m/\033[0m'
+        printf '\033[38;5;208m/\033[0m'
         printf '\033[38;5;220m%s\033[0m' $last_dir
         printf '\033[38;5;208m]\033[0m'
         printf '\033[38;5;220m❯ \033[0m'
