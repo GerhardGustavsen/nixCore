@@ -13,11 +13,12 @@ function fish_prompt
         set parts (string split ' ' -- $SSH_CONNECTION)  # client_ip client_port server_ip server_port
         set server_ip $parts[3]
 
-        # Red background, white text banner
-        printf '\033[48;5;196m\033[38;5;231m 🔒 SSH %s (%s) \033[0m ' $host $server_ip
+
 
         # Directory + prompt in high-contrast colors
-        printf '\033[38;5;208m[\033[0m'       # orange bracket
+        printf '\033[38;5;208m[\033[0m'
+        printf '\033[38;5;220m%s@%s\033[0m' $host $server_ip
+        printf '\033[38;5;208m/\033[0m'
         printf '\033[38;5;220m%s\033[0m' $last_dir
         printf '\033[38;5;208m]\033[0m'
         printf '\033[38;5;220m❯ \033[0m'
