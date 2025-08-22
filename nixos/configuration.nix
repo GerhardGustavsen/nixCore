@@ -140,16 +140,7 @@ in {
   # Networking protocols
   networking.networkmanager.enable = true; # Enable networking
   networking.firewall.enable = true; # Firewall
-  # services.openssh.enable = true; # Enable SSH
-  services.openssh = {
-    enable = true;
-    settings = {
-      PubkeyAuthentication = false;
-      PasswordAuthentication = true;
-      PermitRootLogin = "no";
-      UsePAM = true;
-    };
-  };
+  services.openssh.enable = true; # Enable SSH
   services.printing.enable = true; # Enable printer support
   networking.modemmanager.enable = true;
   systemd.services.ModemManager = {
@@ -220,8 +211,8 @@ in {
   };
   networking.firewall.allowedTCPPorts = [ 22 ]; # for sshd
   security.pam.services.sshd.text = ''
-    session optional pam_exec.so type=open_session  seteuid /home/gg/nixCore/scripts/ssh-notify.sh open
-    session optional pam_exec.so type=close_session seteuid /home/gg/nixCore/scripts/ssh-notify.sh close
+    session optional pam_exec.so quiet log=/tmp/ssh-pam.log type=open_session  seteuid /home/nixCore/scripts/ssh-notify.sh open
+    session optional pam_exec.so quiet log=/tmp/ssh-pam.log type=close_session seteuid /home/nixCore/scripts/ssh-notify.sh close
   ''; # Notiecing ssh connects
 
   # Graphics
