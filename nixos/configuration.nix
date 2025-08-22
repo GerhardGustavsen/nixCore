@@ -140,7 +140,16 @@ in {
   # Networking protocols
   networking.networkmanager.enable = true; # Enable networking
   networking.firewall.enable = true; # Firewall
-  services.openssh.enable = true; # Enable SSH
+  # services.openssh.enable = true; # Enable SSH
+  services.openssh = {
+    enable = true;
+    settings = {
+      PubkeyAuthentication = true;
+      PasswordAuthentication = true;
+      PermitRootLogin = "no";
+      UsePAM = true;
+    };
+  };
   services.printing.enable = true; # Enable printer support
   networking.modemmanager.enable = true;
   systemd.services.ModemManager = {
@@ -178,7 +187,6 @@ in {
   security.sudo.extraRules = [{
     users = [ "gg" ];
     commands = [
-      # Allow reboot without password (two forms: direct reboot and via systemctl)
       {
         command = "${pkgs.systemd}/bin/reboot";
         options = [ "NOPASSWD" ];
