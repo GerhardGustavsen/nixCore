@@ -2,9 +2,8 @@
 set -euo pipefail
 
 ORANGE="${ORANGE:-#ff8c00}"
-DEFAULT_COLOR="${DEFAULT_COLOR:-#151515}"   # fallback if `mode status` isn't present
-LOG_UNITS=(sshd.service sshd@.service)      # cover main + per-connection
-LOG_TAGS=(sshd sshd-session)                # cover identifiers
+DEFAULT_COLOR="${DEFAULT_COLOR:-#151515}"
+PAGER=                             # make sure nothing pages output
 
 err(){ printf '[sshbar] %s\n' "$*" >&2; }
 
@@ -48,30 +47,21 @@ apply_state() {
   fi
 }
 
-# Build a single journalctl that follows all relevant streams
-build_journal_cmd() {
-  local args=( -f -o cat --follow --since now )
-  for u in "${LOG_UNITS[@]}"; do args+=( -u "$u" ); done
-  for t in "${LOG_TAGS[@]}";  do args+=( -t "$t" ); done
-  printf '%q ' journalctl "${args[@]}"
-}
-
-# Prime state on startup
+# initial state
 last="$(active_ssh_count)"
 apply_state "$last"
 
-# Follow logs (no pipeline subshell; use process substitution)
-# Match both connect and disconnect-ish lines; then recompute count.
+# Event stream from logind (no polling, no journal parsing)
+# We react on any session changes and recompute count.
 while IFS= read -r line; do
   case "$line" in
-    *"Accepted "*|*"Connection from "*|*"session opened for user "*|*"Starting Session "*)
+    *"New session "*|*"Removed session "*|*"Session "*)
       now="$(active_ssh_count)"
-      if [[ "$now" != "$last" ]]; then apply_state "$now"; last="$now"; fi
-      ;;
-    *"Disconnected from "*|*"Received disconnect "*|*"session closed for user "*|*"Closed session "*|*"Removed session "*)
-      now="$(active_ssh_count)"
-      if [[ "$now" != "$last" ]]; then apply_state "$now"; last="$now"; fi
+      if [[ "$now" != "$last" ]]; then
+        apply_state "$now"
+        last="$now"
+      fi
       ;;
     *) : ;;
   esac
-done < <(eval "$(build_journal_cmd)")
+done < <(loginctl monitor --no-pager)
