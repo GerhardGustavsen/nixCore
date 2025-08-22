@@ -210,10 +210,6 @@ in {
     enableSSHSupport = true;
   };
   networking.firewall.allowedTCPPorts = [ 22 ]; # for sshd
-  security.pam.services.sshd.text = ''
-    session optional pam_exec.so quiet log=/tmp/ssh-pam.log type=open_session  seteuid /home/nixCore/scripts/ssh-notify.sh open
-    session optional pam_exec.so quiet log=/tmp/ssh-pam.log type=close_session seteuid /home/nixCore/scripts/ssh-notify.sh close
-  ''; # Notiecing ssh connects
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support

@@ -64,6 +64,27 @@
     Install = { WantedBy = [ "default.target" ]; };
   };
 
+  # SSH watcher
+  systemd.user.services.ssh-bar = {
+    Unit = {
+      Description = "Watch sshd journal";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "%h/nixCore/scripts/ssh-detect.sh";
+      Restart = "always";
+      RestartSec = 1;
+      Environment = [
+        "PATH=%h/.nix-profile/bin:/etc/profiles/per-user/%u/bin:/run/current-system/sw/bin"
+        "DISPLAY=:0"
+        "XDG_RUNTIME_DIR=%t"
+      ];
+    };
+    Install = { WantedBy = [ "default.target" ]; };
+  };
+
   # ------------------------------------------------------------------------------------------
   # ----------------------------------------- RICE -------------------------------------------
   # ------------------------------------------------------------------------------------------
