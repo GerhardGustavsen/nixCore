@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Color only when active; on exit we ALWAYS run `mode status` to restore your mode color.
 ORANGE="${ORANGE:-#ff8c00}"
-DEFAULT_COLOR="${DEFAULT_COLOR:-#151515}"
-PAGER=                             # make sure nothing pages output
+PAGER=
 
 err(){ printf '[sshbar] %s\n' "$*" >&2; }
 
@@ -32,36 +32,39 @@ active_ssh_count() {
   echo "$cnt"
 }
 
-apply_state() {
-  local now="$1"
-  if (( now > 0 )); then
+apply_transition() {
+  # called only when count actually changes
+  local prev="$1" now="$2"
+  if (( prev == 0 && now > 0 )); then
     set_bar_color "$ORANGE"
     notify "SSH connected" "$now active session(s)"
-  else
+  elif (( prev > 0 && now == 0 )); then
+    # restore via your mode tool (blue stays blue if you're in server mode)
     if command -v mode >/dev/null 2>&1; then
-      mode status >/dev/null 2>&1 || set_bar_color "$DEFAULT_COLOR"
-    else
-      set_bar_color "$DEFAULT_COLOR"
+      mode status >/dev/null 2>&1 || true
     fi
     notify "SSH disconnected" "No active SSH sessions"
   fi
 }
 
-# initial state
+# Initial state (don’t touch color unless there’s already an active SSH)
 last="$(active_ssh_count)"
-apply_state "$last"
+if (( last > 0 )); then set_bar_color "$ORANGE"; fi
 
-# Event stream from logind (no polling, no journal parsing)
-# We react on any session changes and recompute count.
+# Build journal follower – cover main + per-connection units and both tags
+# Note: quoting for the template unit requires eval.
+JOURNAL_CMD="journalctl -af -o cat --since now -u sshd.service -u 'sshd@*' -t sshd -t sshd-session"
+
+# Case-insensitive match for many distro phrasings of open/close
+shopt -s nocasematch
+
+# One loop; recompute count only on relevant lines
 while IFS= read -r line; do
-  case "$line" in
-    *"New session "*|*"Removed session "*|*"Session "*)
-      now="$(active_ssh_count)"
-      if [[ "$now" != "$last" ]]; then
-        apply_state "$now"
-        last="$now"
-      fi
-      ;;
-    *) : ;;
-  esac
-done < <(loginctl monitor --no-pager)
+  # Normalize whitespace
+  l="${line//[$'\r\n']/}"
+  if [[ "$l" == *accepted* || "$l" == *"session opened for user "* || "$l" == *"starting session "* || "$l" == *"opened session "* ]]; then
+    now="$(active_ssh_count)"; if [[ "$now" != "$last" ]]; then apply_transition "$last" "$now"; last="$now"; fi
+  elif [[ "$l" == *"session closed for user "* || "$l" == *"disconnected from "* || "$l" == *"received disconnect"* || "$l" == *"closed session "* || "$l" == *"removed session "* || "$l" == *"connection closed by "* ]]; then
+    now="$(active_ssh_count)"; if [[ "$now" != "$last" ]]; then apply_transition "$last" "$now"; last="$now"; fi
+  fi
+done < <(eval "$JOURNAL_CMD")
