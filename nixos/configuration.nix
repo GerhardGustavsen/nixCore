@@ -184,22 +184,6 @@ in {
     users = [ "gg" ];
     commands = [
       {
-        command = "${pkgs.systemd}/bin/reboot";
-        options = [ "NOPASSWD" ];
-      }
-      {
-        command = "${pkgs.systemd}/bin/systemctl reboot";
-        options = [ "NOPASSWD" ];
-      }
-      {
-        command = "${pkgs.systemd}/bin/poweroff";
-        options = [ "NOPASSWD" ];
-      }
-      {
-        command = "${pkgs.systemd}/bin/systemctl poweroff";
-        options = [ "NOPASSWD" ];
-      }
-      {
         command = "${pkgs.systemd}/bin/systemctl start sshd";
         options = [ "NOPASSWD" ];
       }
@@ -214,7 +198,7 @@ in {
     enable = true;
     enableSSHSupport = true;
   };
-  networking.firewall.allowedTCPPorts = [ 22 ]; # for sshd
+  networking.firewall.allowedTCPPorts = [ 34826 ];
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support
