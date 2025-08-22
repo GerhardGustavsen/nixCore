@@ -3,8 +3,8 @@ set -euo pipefail
 
 ORANGE="${ORANGE:-#ff8c00}"
 DEFAULT_COLOR="${DEFAULT_COLOR:-#151515}"   # fallback if `mode status` isn't present
-LOG_UNIT="${LOG_UNIT:-sshd}"
-PAGER=
+LOG_UNITS=(sshd.service sshd@.service)      # cover main + per-connection
+LOG_TAGS=(sshd sshd-session)                # cover identifiers
 
 err(){ printf '[sshbar] %s\n' "$*" >&2; }
 
@@ -25,7 +25,7 @@ active_ssh_count() {
   while read -r sid _; do
     [[ -n "$sid" ]] || continue
     local info
-    info="$(loginctl show-session "$sid" -p Remote -p RemoteHost -p Service -p State 2>/dev/null || true)"
+    info="$(loginctl show-session "$sid" -p Remote -p Service -p State 2>/dev/null || true)"
     if grep -q '^Service=sshd$' <<<"$info" && grep -q '^Remote=yes$' <<<"$info" && grep -q '^State=active$' <<<"$info"; then
       cnt=$((cnt+1))
     fi
@@ -48,20 +48,30 @@ apply_state() {
   fi
 }
 
-last="$(active_ssh_count)"; apply_state "$last"
+# Build a single journalctl that follows all relevant streams
+build_journal_cmd() {
+  local args=( -f -o cat --follow --since now )
+  for u in "${LOG_UNITS[@]}"; do args+=( -u "$u" ); done
+  for t in "${LOG_TAGS[@]}";  do args+=( -t "$t" ); done
+  printf '%q ' journalctl "${args[@]}"
+}
 
-# Event-driven loop: journalctl follows in real time.
-journalctl -fu "$LOG_UNIT" -o cat | \
+# Prime state on startup
+last="$(active_ssh_count)"
+apply_state "$last"
+
+# Follow logs (no pipeline subshell; use process substitution)
+# Match both connect and disconnect-ish lines; then recompute count.
 while IFS= read -r line; do
-  # Only react on lines that imply session count changes.
   case "$line" in
-    *"Accepted "*|*"session opened for user "*|*"session closed for user "*|*"Disconnected from user "*|*"Disconnected from "*)
+    *"Accepted "*|*"Connection from "*|*"session opened for user "*|*"Starting Session "*)
       now="$(active_ssh_count)"
-      if [[ "$now" != "$last" ]]; then
-        apply_state "$now"
-        last="$now"
-      fi
+      if [[ "$now" != "$last" ]]; then apply_state "$now"; last="$now"; fi
+      ;;
+    *"Disconnected from "*|*"Received disconnect "*|*"session closed for user "*|*"Closed session "*|*"Removed session "*)
+      now="$(active_ssh_count)"
+      if [[ "$now" != "$last" ]]; then apply_state "$now"; last="$now"; fi
       ;;
     *) : ;;
   esac
-done
+done < <(eval "$(build_journal_cmd)")
