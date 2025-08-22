@@ -178,12 +178,29 @@ in {
   security.sudo.extraRules = [{
     users = [ "gg" ];
     commands = [
+      # Allow reboot without password (two forms: direct reboot and via systemctl)
       {
-        command = "/run/current-system/sw/bin/systemctl start sshd";
+        command = "${pkgs.systemd}/bin/reboot";
         options = [ "NOPASSWD" ];
       }
       {
-        command = "/run/current-system/sw/bin/systemctl stop sshd";
+        command = "${pkgs.systemd}/bin/systemctl reboot";
+        options = [ "NOPASSWD" ];
+      }
+      {
+        command = "${pkgs.systemd}/bin/poweroff";
+        options = [ "NOPASSWD" ];
+      }
+      {
+        command = "${pkgs.systemd}/bin/systemctl poweroff";
+        options = [ "NOPASSWD" ];
+      }
+      {
+        command = "${pkgs.systemd}/bin/systemctl start sshd";
+        options = [ "NOPASSWD" ];
+      }
+      {
+        command = "${pkgs.systemd}/bin/systemctl stop sshd";
         options = [ "NOPASSWD" ];
       }
     ];
@@ -194,6 +211,10 @@ in {
     enableSSHSupport = true;
   };
   networking.firewall.allowedTCPPorts = [ 22 ]; # for sshd
+  security.pam.services.sshd.text = ''
+    session optional pam_exec.so type=open_session  seteuid /home/gg/nixCore/scripts/ssh-notify.sh open
+    session optional pam_exec.so type=close_session seteuid /home/gg/nixCore/scripts/ssh-notify.sh close
+  ''; # Notiecing ssh connects
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support
