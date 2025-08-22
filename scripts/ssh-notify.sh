@@ -2,67 +2,63 @@
 # ssh-bar-notify.sh open|close
 set -euo pipefail
 
-# --- config you may tweak ---
-DESKTOP_USER="gg"                                 # user running AwesomeWM
-ACTIVE_BAR_COLOR="${ACTIVE_BAR_COLOR:-#ff8c00}"   # bright orange
-DEFAULT_BAR_COLOR="${DEFAULT_BAR_COLOR:-#222222}" # your normal bar color
-STATE_FILE="/run/ssh_active_count"
-LOCK_FILE="/run/ssh_notify.lock"
+# --- config ---
+ORANGE="${ORANGE:-#ff8c00}"
+DEFAULT_COLOR="${DEFAULT_COLOR:-#151515}"   # used only if `mode status` not found
+STATE="/run/ssh_active_count"
+
+# Desktop user: default to PAM user; override via env DESKTOP_USER if needed
+DESKTOP_USER="${DESKTOP_USER:-${PAM_USER:-gg}}"
 
 # --- helpers ---
-err(){ printf '[ssh-notify] %s\n' "$*" >&2; }
+err(){ printf '[sshbar] %s\n' "$*" >&2; }
 
-# Your function (unaltered), but we'll ensure DISPLAY and awesome-client.
+# Uses your Awesome signal
 set_bar_color() {
   local color="$1"
-  command -v awesome-client >/dev/null 2>&1 || { err "awesome-client not found; skipping bar color"; return 0; }
-  [[ -z "${DISPLAY:-}" ]] && { err "DISPLAY not set; skipping bar color"; return 0; }
-  awesome-client "awesome.emit_signal('mode::bar_bg', '$color')" >/dev/null 2>&1 || err "could not signal AwesomeWM"
+  command -v awesome-client >/dev/null 2>&1 || { err "awesome-client not found; skip"; return 0; }
+  [[ -z "${DISPLAY:-}" ]] && { err "DISPLAY not set; skip"; return 0; }
+  awesome-client "awesome.emit_signal('mode::bar_bg', '$color')" >/dev/null 2>&1 || err "awesome-client failed"
 }
 
-# --- locate Awesome socket + prep env so awesome-client works from PAM ---
-uid=$(id -u "$DESKTOP_USER")
+notify() {
+  command -v dunstify >/dev/null 2>&1 || return 0
+  dunstify -a "ssh" "$1" "$2" -u low -t 3000 || true
+}
+
+# Prepare env so awesome-client works from PAM
+uid="$(id -u "$DESKTOP_USER")"
 export XDG_RUNTIME_DIR="/run/user/$uid"
-# awesome-client talks over ${XDG_RUNTIME_DIR}/awesome; it doesn't *need* DISPLAY,
-# but your function checks DISPLAY, so set a sane default.
 export DISPLAY="${DISPLAY:-:0}"
 
-# Try to ensure awesome-client is reachable even from PAM PATH
+# Try to find awesome-client in common Nix paths if PATH is bare
 if ! command -v awesome-client >/dev/null 2>&1; then
-  for p in \
-    "/home/$DESKTOP_USER/.nix-profile/bin/awesome-client" \
-    "/etc/profiles/per-user/$DESKTOP_USER/bin/awesome-client" \
-    "/run/current-system/sw/bin/awesome-client"
-  do
-    [[ -x "$p" ]] && export PATH="$(dirname "$p"):$PATH"
+  for p in "/home/$DESKTOP_USER/.nix-profile/bin" "/etc/profiles/per-user/$DESKTOP_USER/bin" "/run/current-system/sw/bin"; do
+    [[ -x "$p/awesome-client" ]] && export PATH="$p:$PATH"
   done
 fi
 
-# --- refcount with lock to handle multiple SSH sessions ---
-mkdir -p /run
-exec 9>"$LOCK_FILE"
-flock 9
-
-count=0
-[[ -f "$STATE_FILE" ]] && read -r count < "$STATE_FILE" || true
+# --- logic with tiny refcount ---
+read_count(){ [[ -f "$STATE" ]] && cat "$STATE" || echo 0; }
+write_count(){ echo "$1" > "$STATE"; }
 
 case "${1:-}" in
   open)
-    : $((count++))
-    echo "$count" > "$STATE_FILE"
-    if [[ "$count" -eq 1 ]]; then
-      set_bar_color "$ACTIVE_BAR_COLOR"
-    fi
+    c="$(read_count)"; c=$((c+1)); write_count "$c"
+    if (( c == 1 )); then set_bar_color "$ORANGE"; fi
+    notify "SSH connected" "${PAM_USER:-?}@${PAM_RHOST:-local}"
     ;;
   close)
-    if (( count > 0 )); then : $((count--)); fi
-    echo "$count" > "$STATE_FILE"
-    if [[ "$count" -eq 0 ]]; then
-      set_bar_color "$DEFAULT_BAR_COLOR"
+    c="$(read_count)"; (( c > 0 )) && c=$((c-1)); write_count "$c"
+    notify "SSH disconnected" "${PAM_USER:-?}@${PAM_RHOST:-local}"
+    if (( c == 0 )); then
+      if command -v mode >/dev/null 2>&1; then
+        mode status >/dev/null 2>&1 || set_bar_color "$DEFAULT_COLOR"
+      else
+        set_bar_color "$DEFAULT_COLOR"
+      fi
     fi
     ;;
   *)
-    err "usage: $0 open|close"
-    exit 2
-    ;;
+    err "usage: $0 open|close"; exit 2;;
 esac
