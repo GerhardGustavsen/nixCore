@@ -144,7 +144,7 @@ in {
   services.openssh = {
     enable = true;
     settings = {
-      PubkeyAuthentication = true;
+      PubkeyAuthentication = false;
       PasswordAuthentication = true;
       PermitRootLogin = "no";
       UsePAM = true;
