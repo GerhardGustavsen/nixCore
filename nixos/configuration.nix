@@ -140,7 +140,12 @@ in {
   # Networking protocols
   networking.networkmanager.enable = true; # Enable networking
   networking.firewall.enable = true; # Firewall
-  services.openssh.enable = true; # Enable SSH
+  services.openssh.enable = true;
+  services.openssh.settings = {
+    PasswordAuthentication = false;
+    KbdInteractiveAuthentication = false;
+    PermitRootLogin = "no";
+  };
   services.printing.enable = true; # Enable printer support
   networking.modemmanager.enable = true;
   systemd.services.ModemManager = {
