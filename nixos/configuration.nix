@@ -152,7 +152,6 @@ in {
       MaxAuthTries = 3;
       LoginGraceTime = "30s";
       MaxStartups = "10:30:100";
-      UseDns = "no";
     };
   };
   services.printing.enable = true; # Enable printer support
