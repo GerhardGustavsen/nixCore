@@ -139,14 +139,20 @@ in {
 
   # Networking protocols
   networking.networkmanager.enable = true; # Enable networking
-  networking.firewall.enable = true; # Firewall
   services.openssh = {
     enable = true;
     ports = [ 34826 ];
     settings = {
+      PermitRootLogin = "no";
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
-      PermitRootLogin = "no";
+      PubkeyAuthentication = true;
+      AuthenticationMethods = "publickey";
+
+      MaxAuthTries = 3;
+      LoginGraceTime = "30s";
+      MaxStartups = "10:30:100";
+      UseDNS = "no";
     };
   };
   services.printing.enable = true; # Enable printer support
@@ -154,6 +160,12 @@ in {
   systemd.services.ModemManager = {
     enable = pkgs.lib.mkForce true;
     wantedBy = [ "multi-user.target" "network.target" ];
+  };
+  networking.firewall = {
+    enable = true;
+    extraInputRules = ''
+      tcp dport 34826 ct state new limit rate 30/minute accept
+    '';
   };
 
   # Sound
@@ -201,7 +213,6 @@ in {
     enable = true;
     enableSSHSupport = true;
   };
-  networking.firewall.allowedTCPPorts = [ 34826 ];
 
   # Graphics
   hardware.graphics.enable32Bit = true; # Steam support

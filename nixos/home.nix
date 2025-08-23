@@ -121,6 +121,7 @@
 
     # Editors:
     vscode
+    obsidian
     libreoffice
 
     # Rice:
