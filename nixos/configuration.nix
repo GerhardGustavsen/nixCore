@@ -58,6 +58,7 @@ in {
   boot.extraModprobeConfig = ''
     options nvidia-drm modeset=1
   ''; # suspect
+  boot.initrd.kernelModules = [ "thunderbolt" ];
   swapDevices = [{
     device = "/var/lib/swapfile";
     size = 16 * 1024;
@@ -223,7 +224,7 @@ in {
     settings.vsync = true;
   };
   hardware.graphics.enable = true;
-  services.xserver.videoDrivers = [ "modesetting" "nvidia" ];
+  services.xserver.videoDrivers = [ "nvidia" ];
   #services.xserver.extraConfig = ''
   #  Include "/run/xorg/10-gpu.conf"
   #''; # little suspect
@@ -235,7 +236,6 @@ in {
     nvidiaSettings = true;
     package =
       config.boot.kernelPackages.nvidiaPackages.stable; # config.boot.kernelPackages.nvidia_x11;
-
     prime = {
       offload.enable = true;
       sync.enable = false;
@@ -304,16 +304,16 @@ in {
   };
 
   # eGPU detect:
-  systemd.services.gpu-detect = {
-    description = "Detect NVIDIA GPU and set Xorg primary device (before DM)";
-    after = [ "systemd-udev-settle.service" ];
-    before = [ "display-manager.service" ];
-    wantedBy = [ "display-manager.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = [ "/home/gg/nixCore/scripts/gpu-detect.sh" ];
-    };
-  };
+  #systemd.services.gpu-detect = {
+  #  description = "Detect NVIDIA GPU and set Xorg primary device (before DM)";
+  #  after = [ "systemd-udev-settle.service" ];
+  #  before = [ "display-manager.service" ];
+  #  wantedBy = [ "display-manager.service" ];
+  #  serviceConfig = {
+  #    Type = "oneshot";
+  #    ExecStart = [ "/home/gg/nixCore/scripts/gpu-detect.sh" ];
+  #  };
+  #};
 
   # ------------------------------------------------------------------------------------------
   # ----------------------------------------- PROGRAMS ---------------------------------------
@@ -392,6 +392,7 @@ in {
     file-roller # zip and unzip for thunar
     mesa-demos # GPU utils
     nftables # Filefwall tools
+    glmark2 # GPU benchmark
   ];
 
   # ------------------------------------------------------------------------------------------

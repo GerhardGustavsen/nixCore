@@ -62,20 +62,6 @@ if status is-interactive
     end
 
     # ----------------------------------------------------------------
-    # ----------------------------- eGPU -----------------------------
-    # ----------------------------------------------------------------
-
-    function egpu
-        if lspci | grep -qi "NVIDIA"
-            echo "[egpu] NVIDIA GPU detected. Running on eGPU: $argv"
-            env DRI_PRIME=1 $argv
-        else
-            echo "[egpu] No NVIDIA GPU found. Running normally: $argv"
-            command $argv
-        end
-    end
-
-    # ----------------------------------------------------------------
     # ----------------------------- Aliases --------------------------
     # ----------------------------------------------------------------
 
