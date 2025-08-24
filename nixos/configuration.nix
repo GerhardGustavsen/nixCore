@@ -223,7 +223,7 @@ in {
     settings.vsync = true;
   };
   hardware.graphics.enable = true;
-  services.xserver.videoDrivers = [ "modesetting" ];
+  services.xserver.videoDrivers = [ "modesetting" "nvidia" ];
   #services.xserver.extraConfig = ''
   #  Include "/run/xorg/10-gpu.conf"
   #''; # little suspect
@@ -236,14 +236,14 @@ in {
     package =
       config.boot.kernelPackages.nvidiaPackages.stable; # config.boot.kernelPackages.nvidia_x11;
 
-    #prime = {
-    #  offload.enable = true;
-    #  sync.enable = false;
-    #  allowExternalGpu = true;
-    #  # Make sure to use the correct Bus ID values for your system!
-    #  intelBusId = "PCI:0:2:0";
-    #  nvidiaBusId = "PCI:12:0:0";
-    #};
+    prime = {
+      offload.enable = true;
+      sync.enable = false;
+      allowExternalGpu = true;
+      # Make sure to use the correct Bus ID values for your system!
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:12:0:0";
+    };
   };
 
   # ------------------------------------------------------------------------------------------
