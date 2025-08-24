@@ -57,8 +57,7 @@ in {
     [ "nouveau" "nvidiafb" "i2c_nvidia_gpu" ]; # to get eGPU to work
   boot.extraModprobeConfig = ''
     options nvidia-drm modeset=1
-  ''; # suspect
-  boot.initrd.kernelModules = [ "thunderbolt" ];
+  '';
   swapDevices = [{
     device = "/var/lib/swapfile";
     size = 16 * 1024;
@@ -225,17 +224,13 @@ in {
   };
   hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
-  #services.xserver.extraConfig = ''
-  #  Include "/run/xorg/10-gpu.conf"
-  #''; # little suspect
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = true;
     powerManagement.finegrained = true;
     open = false;
     nvidiaSettings = true;
-    package =
-      config.boot.kernelPackages.nvidiaPackages.stable; # config.boot.kernelPackages.nvidia_x11;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
     prime = {
       offload.enable = true;
       sync.enable = false;
@@ -302,18 +297,6 @@ in {
         "${pkgs.bash}/bin/bash -c '${rootTriggerScript} sleep; sleep 3'";
     };
   };
-
-  # eGPU detect:
-  #systemd.services.gpu-detect = {
-  #  description = "Detect NVIDIA GPU and set Xorg primary device (before DM)";
-  #  after = [ "systemd-udev-settle.service" ];
-  #  before = [ "display-manager.service" ];
-  #  wantedBy = [ "display-manager.service" ];
-  #  serviceConfig = {
-  #    Type = "oneshot";
-  #    ExecStart = [ "/home/gg/nixCore/scripts/gpu-detect.sh" ];
-  #  };
-  #};
 
   # ------------------------------------------------------------------------------------------
   # ----------------------------------------- PROGRAMS ---------------------------------------

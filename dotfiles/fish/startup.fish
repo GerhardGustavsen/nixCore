@@ -71,4 +71,6 @@ if status is-interactive
     alias upgrade='reconfigure upgrade'
     alias update='reconfigure update'
 
+    alias minecraft='egpu prismlauncher'
+
 end

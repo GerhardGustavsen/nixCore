@@ -114,10 +114,13 @@
     # Big programs:
     slack
     spotify
-    steam
     kicad-small
     discord
     freecad
+
+    # Games:
+    prismlauncher # open source minecraft launcher
+    steam
 
     # Editors:
     vscode

@@ -80,10 +80,10 @@ reload() {
 
     step "Creating symlinks for scripts…"
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"
-    link "$CORESCR/blurlock.sh" "$EXE/lock"
     link "$CORESCR/microcontroller-flash.sh" "$EXE/mcflash"
     link "$CORESCR/mode.sh" "$EXE/mode"
     link "$CORESCR/egpu.sh" "$EXE/egpu"
+    link "$CORESCR/ugpu.sh" "$EXE/ugpu"
     chmod +x "$EXE/"*
 
     if [ -n "${DISPLAY-}" ] && command -v awesome-client &>/dev/null; then

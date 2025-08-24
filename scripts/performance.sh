@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # performance.sh — flip performance knobs when entering/leaving "performance" mode
-# Usage: performance.sh enable|disable
+# Usage: performance.sh enable|disable [--aggressive]
 set -euo pipefail
 
-ACTION="${1:-}"; [[ "$ACTION" == "enable" || "$ACTION" == "disable" ]] || { echo "usage: $0 {enable|disable}"; exit 2; }
+ACTION="${1:-}"; [[ "$ACTION" == "enable" || "$ACTION" == "disable" ]] || { echo "usage: $0 {enable|disable} [--aggressive]"; exit 2; }
+AGGRESSIVE="${2:-}"
 
 # --- tiny logger ---
 RED=$'\033[91m'; YELLOW=$'\033[93m'; GREEN=$'\033[92m'; RESET=$'\033[0m'
@@ -13,192 +14,112 @@ err()  { printf "${RED}ERROR:${RESET} %s\n" "$*" >&2; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
 asroot() {
-  sudo -n true 2>/dev/null || warn "sudo may prompt for password"
+  sudo -n true 2>/dev/null || true
   sudo "$@"
 }
 
-# --- summary collector ---
 SUMMARY=()
 addsum() { SUMMARY+=("$1"); }
 
-# --- helpers ---
 run() {
   local desc="$1"; shift
-  if "$@" >/dev/null 2>&1; then
-    info "OK: $desc"
-    return 0
-  else
-    warn "Failed: $desc"
-    return 1
-  fi
+  if "$@" >/dev/null 2>&1; then info "OK: $desc"; return 0
+  else warn "Failed: $desc"; return 1; fi
 }
 sysfs_write() {
   local path="$1" val="$2" desc="$3"
-  if [[ -e "$path" ]]; then
-    if echo "$val" | asroot tee "$path" >/dev/null 2>&1; then
-      info "OK: $desc"
-      return 0
-    else
-      warn "Failed: $desc ($path)"
-      return 1
-    fi
-  else
-    warn "Missing: $desc ($path)"
-    return 1
-  fi
+  [[ -e "$path" ]] || { warn "Missing: $desc ($path)"; return 1; }
+  if echo "$val" | asroot tee "$path" >/dev/null 2>&1; then info "OK: $desc"; return 0
+  else warn "Failed: $desc ($path)"; return 1; fi
 }
 
 # --- CPU ---
-choose_governor() { # usage: choose_governor /sys/.../policyX -> prints best governor
+choose_governor() {
   local govs_file="$1/scaling_available_governors"
   if [[ -r "$govs_file" ]]; then
     local avail; avail="$(<"$govs_file")"
-    # preference order for disable (balanced-ish)
     for g in schedutil powersave conservative ondemand; do
       [[ " $avail " == *" $g "* ]] && { printf '%s' "$g"; return 0; }
     done
-    # fall back to whatever is listed first
     set -- $avail; printf '%s' "$1"
-  else
-    # file missing: guess a safe fallback
-    printf '%s' powersave
-  fi
+  else printf '%s' powersave; fi
 }
 
 enable_cpu() {
-  local gov_changed=0 gov_total=0
-  if have powerprofilesctl; then
-    run "power profile → performance" powerprofilesctl set performance || true
-    addsum "CPU profile: performance"
-  else
-    addsum "CPU profile: unavailable"
+  if have powerprofilesctl; then run "power profile → performance" powerprofilesctl set performance || true
   fi
-
-  # Try to set "performance" if available, else best-high governor we can find
+  local ch=0 tot=0
   for p in /sys/devices/system/cpu/cpufreq/policy*; do
     [[ -e "$p/scaling_governor" ]] || continue
-    gov_total=$((gov_total+1))
-    local target="performance"
-    if [[ -r "$p/scaling_available_governors" ]]; then
-      avail="$(<"$p/scaling_available_governors")"
-      if [[ " $avail " != *" performance "* ]]; then
-        # fall back to common high-performance governors (rarely needed)
-        for g in performance; do :; done
-      fi
-    fi
-    if echo "$target" | asroot tee "$p/scaling_governor" >/dev/null 2>&1; then
-      info "OK: CPU governor ${p##*/} → $target"
-      gov_changed=$((gov_changed+1))
-    else
-      warn "Failed: CPU governor ${p##*/} → $target"
-    fi
+    tot=$((tot+1))
+    echo performance | asroot tee "$p/scaling_governor" >/dev/null 2>&1 && { info "OK: ${p##*/} → performance"; ch=$((ch+1)); } || warn "Failed: ${p##*/}"
   done
-  addsum "CPU governor: performance (${gov_changed}/${gov_total})"
-
-  if sysfs_write /sys/devices/system/cpu/intel_pstate/no_turbo 0 "Intel Turbo → enabled (0)"; then
-    addsum "Intel Turbo: enabled"
-  else
-    addsum "Intel Turbo: unchanged/not present"
-  fi
-
-  if have sysctl && asroot sysctl -q vm.swappiness=10 >/dev/null 2>&1; then
-    info "OK: vm.swappiness → 10"
-    addsum "Swappiness: 10"
-  else
-    addsum "Swappiness: unchanged"
-  fi
+  addsum "CPU governor: performance (${ch}/${tot})"
+  sysfs_write /sys/devices/system/cpu/intel_pstate/no_turbo 0 "Intel Turbo → enabled" || true
+  if have sysctl; then asroot sysctl -q vm.swappiness=10 >/dev/null 2>&1 && info "OK: vm.swappiness → 10"; fi
 }
 
 disable_cpu() {
-  if have powerprofilesctl; then
-    powerprofilesctl set balanced >/dev/null 2>&1 || true
-    addsum "CPU profile: balanced"
-  else
-    addsum "CPU profile: unavailable"
-  fi
-
-  local gov_changed=0 gov_total=0
+  if have powerprofilesctl; then powerprofilesctl set balanced >/dev/null 2>&1 || true; fi
+  local ch=0 tot=0
   for p in /sys/devices/system/cpu/cpufreq/policy*; do
     [[ -e "$p/scaling_governor" ]] || continue
-    gov_total=$((gov_total+1))
-    target="$(choose_governor "$p")"
-    if echo "$target" | asroot tee "$p/scaling_governor" >/dev/null 2>&1; then
-      info "OK: CPU governor ${p##*/} → $target"
-      gov_changed=$((gov_changed+1))
-    else
-      warn "Failed: CPU governor ${p##*/} → $target"
-    fi
+    tot=$((tot+1)); tgt="$(choose_governor "$p")"
+    echo "$tgt" | asroot tee "$p/scaling_governor" >/dev/null 2>&1 && { info "OK: ${p##*/} → $tgt"; ch=$((ch+1)); } || warn "Failed: ${p##*/}"
   done
-  addsum "CPU governor: reverted (${gov_changed}/${gov_total})"
+  addsum "CPU governor: reverted (${ch}/${tot})"
+  echo 1 | asroot tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null 2>&1 || true
+  if have sysctl; then asroot sysctl -q vm.swappiness=60 >/dev/null 2>&1 || true; fi
+}
 
-  if echo 1 | asroot tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null 2>&1; then
-    info "OK: Intel Turbo → disabled (1)"
-    addsum "Intel Turbo: disabled"
-  else
-    addsum "Intel Turbo: unchanged/not present"
-  fi
-
-  if have sysctl && asroot sysctl -q vm.swappiness=60 >/dev/null 2>&1; then
-    info "OK: vm.swappiness → 60"
-    addsum "Swappiness: 60"
-  else
-    addsum "Swappiness: unchanged"
+# --- X PRIME offload link (helpful for eGPU) ---
+link_offload() {
+  [[ -n "${DISPLAY-}" ]] || return 0
+  have xrandr || return 0
+  local src nv
+  src="$(xrandr --listproviders 2>/dev/null | awk -F'name:' '/modesetting/{gsub(/^[ \t]+/,"",$2); print $2; exit}')"
+  nv="$(xrandr --listproviders 2>/dev/null | awk -F'name:' '/NVIDIA/{gsub(/^[ \t]+/,"",$2); print $2; exit}')"
+  if [[ -n "${src}" && -n "${nv}" ]]; then
+    xrandr --setprovideroffloadsink "${src}" "${nv}" >/dev/null 2>&1 && info "OK: PRIME offload link ${src} → ${nv}" || warn "Failed: PRIME offload link"
   fi
 }
 
+# --- NVIDIA knobs (safe for PRIME/eGPU) ---
+enable_nvidia() {
+  have nvidia-smi || { addsum "NVIDIA: not present"; return 0; }
 
-# --- GPU ---
-enable_gpu() {
-  local nvidia_present=0 amdgpu_cnt=0 amdgpu_total=0
+  # Keep driver awake so nvidia-smi is responsive, avoid idle clock drops
+  run "NVIDIA persistence mode ON"  asroot nvidia-smi -pm 1 || true
 
-  if have nvidia-smi; then
-    nvidia_present=1
-    run "NVIDIA persistence mode ON"  asroot nvidia-smi -pm 1 || true
-    run "NVIDIA app clocks unrestricted" asroot nvidia-smi -acp UNRESTRICTED || true
-    run "NVIDIA reset app clocks" asroot nvidia-smi -rgc || true
-    run "NVIDIA allow driver-boost (lgc 0,0)" asroot nvidia-smi -lgc 0,0 || true
-    addsum "NVIDIA: persistence/boost enabled"
+  # Prefer Maximum Performance (requires X session + nvidia-settings)
+  if [[ -n "${DISPLAY-}" ]] && have nvidia-settings; then
+    nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=1' >/dev/null 2>&1 && info "OK: PowerMizer → Prefer Maximum Performance" || warn "PowerMizer tweak failed"
   fi
 
-  for f in /sys/class/drm/card*/device/power_dpm_force_performance_level; do
-    [[ -e "$f" ]] || continue
-    amdgpu_total=$((amdgpu_total+1))
-    if echo performance | asroot tee "$f" >/dev/null 2>&1; then
-      info "OK: ${f%/device/*} perf → performance"
-      amdgpu_cnt=$((amdgpu_cnt+1))
-    else
-      warn "Failed: ${f%/device/*} perf → performance"
+  # Optional aggressive knobs (may be rejected on some GeForce/eGPU)
+  if [[ "$AGGRESSIVE" == "--aggressive" ]]; then
+    asroot nvidia-smi -acp UNRESTRICTED >/dev/null 2>&1 || true
+    asroot nvidia-smi -rgc >/dev/null 2>&1 || true
+    # lift power limit to max if allowed
+    if PL_MAX="$(nvidia-smi -q -d POWER 2>/dev/null | awk -F': ' '/Max Power Limit/{print $2; exit}')"; then
+      asroot nvidia-smi -pl "${PL_MAX% W}" >/dev/null 2>&1 && info "OK: Power limit → $PL_MAX" || true
     fi
-  done
-  if (( amdgpu_total > 0 )); then
-    addsum "AMDGPU perf level: performance (${amdgpu_cnt}/${amdgpu_total})"
-  elif (( nvidia_present == 0 )); then
-    addsum "GPU accelerator: not detected"
+    addsum "NVIDIA: aggressive perf (if supported)"
+  else
+    addsum "NVIDIA: persistence + perfmizer"
   fi
 }
-disable_gpu() {
-  local amdgpu_cnt=0 amdgpu_total=0
 
-  if have nvidia-smi; then
-    asroot nvidia-smi -rac >/dev/null 2>&1 || true
-    asroot nvidia-smi -pm 0  >/dev/null 2>&1 || true
-    info "OK: NVIDIA app clocks reset; persistence OFF"
-    addsum "NVIDIA: persistence off, clocks reset"
+disable_nvidia() {
+  have nvidia-smi || return 0
+  # Restore defaults
+  if [[ -n "${DISPLAY-}" ]] && have nvidia-settings; then
+    nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=0' >/dev/null 2>&1 || true  # Adaptive
   fi
-
-  for f in /sys/class/drm/card*/device/power_dpm_force_performance_level; do
-    [[ -e "$f" ]] || continue
-    amdgpu_total=$((amdgpu_total+1))
-    if echo auto | asroot tee "$f" >/dev/null 2>&1; then
-      info "OK: ${f%/device/*} perf → auto"
-      amdgpu_cnt=$((amdgpu_cnt+1))
-    else
-      warn "Failed: ${f%/device/*} perf → auto"
-    fi
-  done
-  if (( amdgpu_total > 0 )); then
-    addsum "AMDGPU perf level: auto (${amdgpu_cnt}/${amdgpu_total})"
-  fi
+  asroot nvidia-smi -rac >/dev/null 2>&1 || true
+  asroot nvidia-smi -pm 0  >/dev/null 2>&1 || true
+  info "OK: NVIDIA reset; persistence OFF"
+  addsum "NVIDIA: reset"
 }
 
 # --- I/O schedulers ---
@@ -206,64 +127,32 @@ enable_io() {
   local nv_cnt=0 nv_tot=0 sd_cnt=0 sd_tot=0
   for s in /sys/block/nvme*/queue/scheduler; do
     [[ -e "$s" ]] || continue
-    nv_tot=$((nv_tot+1))
-    if echo none | asroot tee "$s" >/dev/null 2>&1; then
-      info "OK: ${s%/queue/*} scheduler → none"
-      nv_cnt=$((nv_cnt+1))
-    else
-      warn "Failed: ${s%/queue/*} scheduler → none"
-    fi
+    nv_tot=$((nv_tot+1)); echo none | asroot tee "$s" >/dev/null 2>&1 && { info "OK: ${s%/queue/*} → none"; nv_cnt=$((nv_cnt+1)); } || warn "Failed: ${s%/queue/*}"
   done
   for s in /sys/block/sd*/queue/scheduler; do
     [[ -e "$s" ]] || continue
-    sd_tot=$((sd_tot+1))
-    if grep -q 'mq-deadline' "$s" && echo mq-deadline | asroot tee "$s" >/dev/null 2>&1; then
-      info "OK: ${s%/queue/*} scheduler → mq-deadline"
-      sd_cnt=$((sd_cnt+1))
-    fi
+    sd_tot=$((sd_tot+1)); grep -q 'mq-deadline' "$s" && echo mq-deadline | asroot tee "$s" >/dev/null 2>&1 && { info "OK: ${s%/queue/*} → mq-deadline"; sd_cnt=$((sd_cnt+1)); } || true
   done
   (( nv_tot>0 )) && addsum "NVMe sched: none (${nv_cnt}/${nv_tot})"
   (( sd_tot>0 )) && addsum "SATA sched: mq-deadline (${sd_cnt}/${sd_tot})"
 }
 disable_io() {
-  local nv_cnt=0 nv_tot=0 sd_bfq=0 sd_cfq=0 sd_tot=0
+  local nv_cnt=0 nv_tot=0
   for s in /sys/block/nvme*/queue/scheduler; do
     [[ -e "$s" ]] || continue
-    nv_tot=$((nv_tot+1))
-    if echo none | asroot tee "$s" >/dev/null 2>&1; then
-      info "OK: ${s%/queue/*} scheduler → none"
-      nv_cnt=$((nv_cnt+1))
-    else
-      warn "Failed: ${s%/queue/*} scheduler → none"
-    fi
-  done
-  for s in /sys/block/sd*/queue/scheduler; do
-    [[ -e "$s" ]] || continue
-    sd_tot=$((sd_tot+1))
-    if grep -q 'bfq' "$s" && echo bfq | asroot tee "$s" >/dev/null 2>&1; then
-      info "OK: ${s%/queue/*} scheduler → bfq"
-      sd_bfq=$((sd_bfq+1))
-    elif grep -q 'cfq' "$s" && echo cfq | asroot tee "$s" >/dev/null 2>&1; then
-      info "OK: ${s%/queue/*} scheduler → cfq"
-      sd_cfq=$((sd_cfq+1))
-    fi
+    nv_tot=$((nv_tot+1)); echo none | asroot tee "$s" >/dev/null 2>&1 && { info "OK: ${s%/queue/*} → none"; nv_cnt=$((nv_cnt+1)); } || warn "Failed: ${s%/queue/*}"
   done
   (( nv_tot>0 )) && addsum "NVMe sched: none (${nv_cnt}/${nv_tot})"
-  if (( sd_tot>0 )); then
-    if   (( sd_bfq>0 )); then addsum "SATA sched: bfq (${sd_bfq}/${sd_tot})"
-    elif (( sd_cfq>0 )); then addsum "SATA sched: cfq (${sd_cfq}/${sd_tot})"
-    else addsum "SATA sched: unchanged"
-    fi
-  fi
+  # Don’t force HDD scheduler back; leave kernel defaults
 }
 
 # --- conflicting daemons ---
 enable_misc() {
   local stopped=()
   if have systemctl; then
-    systemctl is-active --quiet tlp.service                      && { run "stop tlp" asroot systemctl stop tlp.service || true; stopped+=("tlp"); }
-    systemctl is-active --quiet power-profiles-daemon.service    && { run "stop power-profiles-daemon" asroot systemctl stop power-profiles-daemon.service || true; stopped+=("power-profiles-daemon"); }
-    systemctl is-active --quiet auto-cpufreq.service             && { run "stop auto-cpufreq" asroot systemctl stop auto-cpufreq.service || true; stopped+=("auto-cpufreq"); }
+    systemctl is-active --quiet tlp.service                   && { run "stop tlp" asroot systemctl stop tlp.service || true; stopped+=("tlp"); }
+    systemctl is-active --quiet power-profiles-daemon.service && { run "stop power-profiles-daemon" asroot systemctl stop power-profiles-daemon.service || true; stopped+=("power-profiles-daemon"); }
+    systemctl is-active --quiet auto-cpufreq.service          && { run "stop auto-cpufreq" asroot systemctl stop auto-cpufreq.service || true; stopped+=("auto-cpufreq"); }
   fi
   (( ${#stopped[@]} )) && addsum "Power daemons: stopped (${stopped[*]})" || addsum "Power daemons: none running"
 }
@@ -281,22 +170,15 @@ if [[ "$ACTION" == "enable" ]]; then
   info "Enabling performance knobs…"
   enable_misc
   enable_cpu
-  #enable_gpu
+  link_offload 
+  enable_nvidia
   enable_io
-  echo
-  echo "Performance features activated:"
-  printf '  - %s\n' "${SUMMARY[@]}"
-  echo
-  exit 0
+  echo; echo "Performance features activated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
 else
   info "Disabling performance knobs…"
   disable_io
-  #disable_gpu
+  disable_nvidia
   disable_cpu
   disable_misc
-  echo
-  echo "Performance features deactivated:"
-  printf '  - %s\n' "${SUMMARY[@]}"
-  echo
-  exit 0
+  echo; echo "Performance features deactivated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
 fi
