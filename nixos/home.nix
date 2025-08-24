@@ -204,6 +204,12 @@
               "https://addons.mozilla.org/firefox/downloads/file/4539502/proton_vpn_firefox_extension-1.2.9.xpi";
             installation_mode = "force_installed";
           };
+          # Unhook:
+          "myallychou@gmail.com" = {
+            install_url =
+              "https://addons.mozilla.org/firefox/downloads/file/4263531/youtube_recommended_videos-1.6.7.xpi";
+            installation_mode = "force_installed";
+          };
           # Theme:
           "dreamer-bold-colorway@mozilla.org" = {
             install_url =
