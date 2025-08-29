@@ -245,6 +245,14 @@ globalkeys =
         end,
         {description = "decrease master width factor", group = "layout"}
     ),
+    awful.key(
+        {modkey, "Control"},
+        "r",
+        function()
+            awesome.restart()
+        end,
+        {description = "restart awesomeWM", group = "awesome"}
+    ),
     -- cycle tiling layout
     awful.key(
         {modkey},
