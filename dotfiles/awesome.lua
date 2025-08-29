@@ -830,31 +830,83 @@ gears.timer.delayed_call(
         -- startupp programs
         awful.spawn.with_shell("/home/gg/nixCore/scripts/startup.sh")
 
-        -- Preload Firefox only if a screen with tag "preload" exists
+        -- Async: is the laptop lid closed?
+        local function lid_is_closed(cb)
+            awful.spawn.easy_async_with_shell(
+                [[sh -c 'grep -hE "state" /proc/acpi/button/lid/*/state 2>/dev/null | awk "{print tolower($2)}" | tail -n1' ]],
+                function(out)
+                    cb(out:match("closed") ~= nil)
+                end
+            )
+        end
+
+        -- Find the first valid "preload" tag across all screens
+        local function find_preload_tag()
+            for s in screen do
+                if s.valid then
+                    local t = awful.tag.find_by_name(s, "preload")
+                    if t and t.screen and t.screen.valid then
+                        return t
+                    end
+                end
+            end
+            return nil
+        end
+
+        -- Async: is Firefox already running?
+        local function firefox_running(cb)
+            awful.spawn.easy_async_with_shell(
+                [[pgrep -x firefox >/dev/null && echo RUNNING || echo NOT]],
+                function(out)
+                    cb(out:match("RUNNING") ~= nil)
+                end
+            )
+        end
+
+        -- Spawn FF and move it to the tag once managed
+        local function spawn_firefox_on_tag(t)
+            local placed = false
+            local function on_manage(c)
+                if placed then
+                    return
+                end
+                if c.class and c.class:lower() == "firefox" then
+                    placed = true
+                    client.disconnect_signal("manage", on_manage)
+                    if t and t.screen and t.screen.valid then
+                        c:move_to_tag(t)
+                    end
+                end
+            end
+            client.connect_signal("manage", on_manage)
+            awful.spawn("firefox --new-instance --private-window about:blank")
+        end
+
+        -- Delay a tick to let X settle (dock/external monitors etc.)
         gears.timer {
-            timeout = 0.5,
+            timeout = 0.7,
             autostart = true,
             single_shot = true,
             callback = function()
-                -- find the tag on any present screen; if none, bail
-                local preload_tag = nil
-                for s in screen do
-                    preload_tag = awful.tag.find_by_name(s, "preload")
-                    if preload_tag then
-                        break
-                    end
-                end
-                if not preload_tag then
-                    return -- lid-closed with no active display or tag missing: do nothing
-                end
-
-                -- only start if firefox isn't already running
-                awful.spawn.easy_async_with_shell(
-                    "pgrep -x firefox >/dev/null || echo NOFFX",
-                    function(out)
-                        if out:match("NOFFX") then
-                            awful.spawn("firefox --new-instance --private-window about:blank", {tag = preload_tag})
+                lid_is_closed(
+                    function(closed)
+                        if closed then
+                            return
                         end
+
+                        local preload_tag = find_preload_tag()
+                        if not preload_tag then
+                            return
+                        end
+
+                        firefox_running(
+                            function(running)
+                                if running then
+                                    return
+                                end
+                                spawn_firefox_on_tag(preload_tag)
+                            end
+                        )
                     end
                 )
             end
