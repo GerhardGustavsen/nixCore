@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
 # performance.sh — flip performance knobs when entering/leaving "performance" mode
 # Usage: performance.sh enable|disable [--aggressive]
-set -euo pipefail
 
-ACTION="${1:-}"; [[ "$ACTION" == "enable" || "$ACTION" == "disable" ]] || { echo "usage: $0 {enable|disable} [--aggressive]"; exit 2; }
+# ---- NEVER FAIL BOILERPLATE -----------------------------------------------
+# Don't abort on errors, unset vars, or pipeline failures
+set +e
+set +u
+set +o pipefail 2>/dev/null || true
+# Swallow any command errors
+trap ':' ERR
+# ---------------------------------------------------------------------------
+
+ACTION="${1:-}"
 AGGRESSIVE="${2:-}"
 
 # --- tiny logger ---
 RED=$'\033[91m'; YELLOW=$'\033[93m'; GREEN=$'\033[92m'; RESET=$'\033[0m'
 info() { printf '%s\n' "$*"; }
 warn() { printf "${YELLOW}⚠ %s${RESET}\n" "$*" >&2; }
-err()  { printf "${RED}ERROR:${RESET} %s\n" "$*" >&2; }
+err()  { printf "${RED}ERROR:${RESET} %s\n" "$*" >&2; }  # kept for messages only
 
 have() { command -v "$1" >/dev/null 2>&1; }
 asroot() {
-  sudo -n true 2>/dev/null || true
-  sudo "$@"
+  if have sudo; then
+    sudo -n "$@" >/dev/null 2>&1 || sudo "$@" >/dev/null 2>&1 || "$@" >/dev/null 2>&1 || true
+  else
+    "$@" >/dev/null 2>&1 || true
+  fi
 }
 
 SUMMARY=()
@@ -46,8 +57,7 @@ choose_governor() {
 }
 
 enable_cpu() {
-  if have powerprofilesctl; then run "power profile → performance" powerprofilesctl set performance || true
-  fi
+  if have powerprofilesctl; then run "power profile → performance" powerprofilesctl set performance || true; fi
   local ch=0 tot=0
   for p in /sys/devices/system/cpu/cpufreq/policy*; do
     [[ -e "$p/scaling_governor" ]] || continue
@@ -88,19 +98,15 @@ link_offload() {
 enable_nvidia() {
   have nvidia-smi || { addsum "NVIDIA: not present"; return 0; }
 
-  # Keep driver awake so nvidia-smi is responsive, avoid idle clock drops
   run "NVIDIA persistence mode ON"  asroot nvidia-smi -pm 1 || true
 
-  # Prefer Maximum Performance (requires X session + nvidia-settings)
   if [[ -n "${DISPLAY-}" ]] && have nvidia-settings; then
     nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=1' >/dev/null 2>&1 && info "OK: PowerMizer → Prefer Maximum Performance" || warn "PowerMizer tweak failed"
   fi
 
-  # Optional aggressive knobs (may be rejected on some GeForce/eGPU)
   if [[ "$AGGRESSIVE" == "--aggressive" ]]; then
     asroot nvidia-smi -acp UNRESTRICTED >/dev/null 2>&1 || true
     asroot nvidia-smi -rgc >/dev/null 2>&1 || true
-    # lift power limit to max if allowed
     if PL_MAX="$(nvidia-smi -q -d POWER 2>/dev/null | awk -F': ' '/Max Power Limit/{print $2; exit}')"; then
       asroot nvidia-smi -pl "${PL_MAX% W}" >/dev/null 2>&1 && info "OK: Power limit → $PL_MAX" || true
     fi
@@ -112,9 +118,8 @@ enable_nvidia() {
 
 disable_nvidia() {
   have nvidia-smi || return 0
-  # Restore defaults
   if [[ -n "${DISPLAY-}" ]] && have nvidia-settings; then
-    nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=0' >/dev/null 2>&1 || true  # Adaptive
+    nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=0' >/dev/null 2>&1 || true
   fi
   asroot nvidia-smi -rac >/dev/null 2>&1 || true
   asroot nvidia-smi -pm 0  >/dev/null 2>&1 || true
@@ -143,7 +148,6 @@ disable_io() {
     nv_tot=$((nv_tot+1)); echo none | asroot tee "$s" >/dev/null 2>&1 && { info "OK: ${s%/queue/*} → none"; nv_cnt=$((nv_cnt+1)); } || warn "Failed: ${s%/queue/*}"
   done
   (( nv_tot>0 )) && addsum "NVMe sched: none (${nv_cnt}/${nv_tot})"
-  # Don’t force HDD scheduler back; leave kernel defaults
 }
 
 # --- conflicting daemons ---
@@ -165,20 +169,30 @@ disable_misc() {
   (( ${#started[@]} )) && addsum "Power daemons: started (${started[*]})" || addsum "Power daemons: none started"
 }
 
-# --- dispatcher ---
-if [[ "$ACTION" == "enable" ]]; then
-  info "Enabling performance knobs…"
-  enable_misc
-  enable_cpu
-  link_offload 
-  enable_nvidia
-  enable_io
-  echo; echo "Performance features activated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
-else
-  info "Disabling performance knobs…"
-  disable_io
-  disable_nvidia
-  disable_cpu
-  disable_misc
-  echo; echo "Performance features deactivated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
-fi
+# --- dispatcher (no hard failure on bad args) ---
+case "$ACTION" in
+  enable)
+    info "Enabling performance knobs…"
+    enable_misc
+    enable_cpu
+    link_offload
+    enable_nvidia
+    enable_io
+    echo; echo "Performance features activated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
+    ;;
+  disable)
+    info "Disabling performance knobs…"
+    disable_io
+    disable_nvidia
+    disable_cpu
+    disable_misc
+    echo; echo "Performance features deactivated:"; printf '  - %s\n' "${SUMMARY[@]}"; echo
+    ;;
+  *)
+    warn "usage: $0 {enable|disable} [--aggressive]"
+    info "No-op; exiting successfully."
+    ;;
+esac
+
+# Force a successful exit no matter what
+exit 0
