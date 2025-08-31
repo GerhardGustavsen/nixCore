@@ -5,9 +5,9 @@ STATE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/mode/state"
 SERVICE="awake.service"
 
 # Colors
-SERVER_COLOR="#002199"      # blue in server mode
-NORMAL_COLOR="#151515"      # your theme.bg_normal
-PERFORMANCE_COLOR="#400050" # red in performance mode
+SERVER_COLOR="#002199b2"      # blue in server mode
+NORMAL_COLOR="#000000b2"      # your theme.bg_normal
+PERFORMANCE_COLOR="#400050b2" # red in performance mode
 
 # Txt colors
 RED="\033[91m"     # bright red

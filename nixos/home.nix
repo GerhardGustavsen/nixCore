@@ -130,6 +130,9 @@
     # Rice:
     unclutter
     neofetch
+    cmatrix
+    pipes
+    cava
     xwallpaper
     papirus-icon-theme
   ];
