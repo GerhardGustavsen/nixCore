@@ -54,7 +54,7 @@ in {
     timeout = 1;
   };
   boot.blacklistedKernelModules =
-    [ "nouveau" "nvidiafb" "i2c_nvidia_gpu" ]; # to get eGPU to work
+    [ "nouveau" "nvidiafb" ]; # to get eGPU to work
   boot.extraModprobeConfig = ''
     options nvidia-drm modeset=1
   '';
@@ -184,6 +184,13 @@ in {
   };
   networking.firewall = {
     enable = true;
+    # Syncthing:
+    allowedTCPPorts = [
+      8384
+      22000
+    ]; # 22000 TCP and/or UDP for sync traffic & 8384 for remote access to GUI
+    allowedUDPPorts = [ 22000 21027 ]; # 21027/UDP for discovery
+    # SSH:
     extraInputRules = ''
       tcp dport 34826 ct state new limit rate 30/minute accept
     '';
@@ -223,21 +230,32 @@ in {
     settings.vsync = true;
   };
   hardware.graphics.enable = true;
-  services.xserver.videoDrivers = [ "nvidia" ];
-  hardware.nvidia = {
-    modesetting.enable = true;
-    powerManagement.enable = true;
-    powerManagement.finegrained = true;
-    open = false;
-    nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-    prime = {
-      offload.enable = true;
-      sync.enable = false;
-      allowExternalGpu = true;
-      # Make sure to use the correct Bus ID values for your system!
-      intelBusId = "PCI:0:2:0";
-      nvidiaBusId = "PCI:12:0:0";
+  services.xserver.videoDrivers = [ "modesetting" ];
+
+  # ------------------------------------------------------------------------------------------
+  # ---------------------------------------- EGPU --------------------------------------------
+  # ------------------------------------------------------------------------------------------
+
+  specialisation = {
+    eGPU.configuration = {
+      system.nixos.label = "nix-NVIDIA";
+      services.xserver.videoDrivers = [ "nvidia" "modesetting" ];
+      hardware.nvidia = {
+        modesetting.enable = true;
+        open = false;
+        nvidiaSettings = true;
+        powerManagement.enable = true;
+        powerManagement.finegrained = false;
+        package = config.boot.kernelPackages.nvidiaPackages.stable;
+        prime = {
+          sync.enable = true; # shuld be false ???
+          offload.enable = false; # shuld be true ???
+          allowExternalGpu = true;
+          # Make sure to use the correct Bus ID values for your system!
+          intelBusId = "PCI:0:2:0";
+          nvidiaBusId = "PCI:12:0:0";
+        };
+      };
     };
   };
 
@@ -248,8 +266,7 @@ in {
   # Nix garbage collection (monthly, keep only last 30 days)
   nix = {
     settings = {
-      auto-optimise-store = true; # dedupe identical files
-      # Optional: make GC more aggressive (frees more space):
+      auto-optimise-store = true;
       # keep-outputs = false;
       # keep-derivations = false;
     };
@@ -260,6 +277,7 @@ in {
       # persistent = true; # (default is true; ensures missed runs happen later)
     };
   };
+  boot.loader.grub.configurationLimit = 10;
 
   system.stateVersion = "24.11"; # apparantly important! ¯\_(ツ)_/¯
   home-manager.backupFileExtension = ".backup";
@@ -377,6 +395,16 @@ in {
     nftables # Filefwall tools
     glmark2 # GPU benchmark
   ];
+
+  services = {
+    syncthing = {
+      enable = true;
+      group = "users";
+      user = "gg";
+      dataDir = "/home/gg/sync";
+      configDir = "/home/gg/sync/.config/syncthing";
+    };
+  }; # GUI on http://127.0.0.1:8384/
 
   # ------------------------------------------------------------------------------------------
   # -------------------------------------- FILEMANAGER ---------------------------------------

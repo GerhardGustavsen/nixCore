@@ -3,10 +3,6 @@
 handle_monitor() {
   sleep 0.5  # Let X settle a little
 
-  if [ -d /sys/bus/thunderbolt/devices ] && ls /sys/bus/thunderbolt/devices 1>/dev/null 2>&1 | grep -q .; then
-    sleep 10  # Let X settle a lot
-  fi
-
   autorandr --change
 
   id=$(dunstify --action="arandr,Open layout editor" \
