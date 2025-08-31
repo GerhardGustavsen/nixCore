@@ -45,9 +45,10 @@ handle_usb() {
       echo "[info] Terminal already running, skipping spawn"
   else
       echo "[connect] Launching mpremote for $PORT"
-      xfce4-terminal \
-          --title="Pico Console" \
-          -e "bash -c 'while true; do mpremote connect $PORT repl; sleep 3; done'" &
+      wezterm \
+          --class "PicoConsole" \
+          --title "Pico Console" \
+          bash -c "while true; do mpremote connect $PORT repl; sleep 3; done" &
   fi
 
   notify-send "MicroPython device detected!" "To run a program:\n\nmcflash path/to/program.py"

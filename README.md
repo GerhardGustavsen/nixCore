@@ -10,7 +10,7 @@
     ▟███████████▛                  ▟██████████▙   DE: none+awesome
     ▜██████████▛                  ▟███████████▛   WM: awesome
           ▟███▛ ▟▙               ▟███▛            Icons: Papirus-Dark [GTK2/3]
-         ▟███▛ ▟██▙             ▟███▛             Terminal: .xfce4-terminal (yeah i know. will change)
+         ▟███▛ ▟██▙             ▟███▛             Terminal: WezTerm
         ▟███▛  ▜███▙           ▝▀▀▀▀              CPU: Intel i5-8250U (8) @ 3.400GHz
         ▜██▛    ▜███▙ ▜██████████████████▛        GPU: Intel UHD Graphics 620
          ▜▛     ▟████▙ ▜████████████████▛         Memory: some

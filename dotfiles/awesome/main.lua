@@ -647,7 +647,16 @@ awful.rules.rules = {
         },
         properties = {
             floating = true,
-            placement = awful.placement.centered
+            placement = function(c)
+                awful.placement.centered(
+                    c,
+                    {
+                        parent = awful.screen.focused(),
+                        honor_workarea = false,
+                        honor_padding = true
+                    }
+                )
+            end
         }
     },
     -- ARandR:
@@ -658,38 +667,61 @@ awful.rules.rules = {
                 "arandr"
             }
         },
-        properties = {floating = true, ontop = true, awful.placement.centered, width = 1000, height = 800},
-        callback = function(c)
-            gears.timer.start_new(
-                0.05,
-                function()
-                    c:geometry(
-                        {
-                            width = 1000,
-                            height = 600
-                        }
-                    )
-                    awful.placement.centered(c, {honor_workarea = true})
-                    return false
-                end
-            )
-        end
+        properties = {
+            floating = true,
+            ontop = true,
+            placement = function(c)
+                awful.placement.centered(
+                    c,
+                    {
+                        parent = awful.screen.focused(),
+                        honor_workarea = false,
+                        honor_padding = true
+                    }
+                )
+            end,
+            width = 1000,
+            height = 600
+        }
     },
     -- Terminal popups:
     {
-        rule = {name = "popup"},
-        properties = {floating = true, placement = awful.placement.centered, width = 1000, height = 800, ontop = true}
+        rule_any = {class = {"popup"}, instance = {"popup"}},
+        properties = {
+            floating = true,
+            placement = function(c)
+                awful.placement.centered(
+                    c,
+                    {
+                        parent = awful.screen.focused(),
+                        honor_workarea = false,
+                        honor_padding = true
+                    }
+                )
+            end,
+            width = 1000,
+            height = 800,
+            ontop = true
+        }
     },
     -- Battery warnings:
     {
         rule = {name = "battery_warnning_popup"},
         properties = {
             floating = true,
-            placement = awful.placement.centered,
+            placement = function(c)
+                awful.placement.centered(
+                    c,
+                    {
+                        parent = awful.screen.focused(),
+                        honor_workarea = false,
+                        honor_padding = true
+                    }
+                )
+            end,
             width = 1000,
             height = 200,
-            ontop = true,
-            sticky = true
+            ontop = true
         }
     },
     -- Terminals:

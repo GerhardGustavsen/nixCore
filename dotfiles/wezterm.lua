@@ -76,5 +76,6 @@ return {
         {key = "Insert", mods = "SHIFT", action = act.PasteFrom("Clipboard")}
     },
     enable_wayland = false,
-    window_padding = {left = 2, right = 4, top = 4, bottom = 4}
+    window_padding = {left = 2, right = 2, top = 4, bottom = 2},
+    window_close_confirmation = "NeverPrompt"
 }

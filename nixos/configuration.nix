@@ -18,7 +18,7 @@ in {
 
   # ENV varriables
   environment.variables = {
-    TERMINAL = "xfce4-terminal";
+    TERMINAL = "wezterm";
     EDITOR = "vim";
     BROWSER = "firefox";
   };

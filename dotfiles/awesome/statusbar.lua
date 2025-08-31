@@ -6,6 +6,17 @@ local beautiful = require("beautiful")
 local statusbar = {}
 
 ------------------------------------------------------------------------------------------------------------
+------------------------------------------------- HELPERS --------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+local function wez(cmd, opts)
+    opts = opts or {}
+    local class = opts.class and ("--class " .. opts.class) or ""
+    -- NOTE: WezTerm has no reliable CLI flags for geometry; use Awesome client rules on class if you need sizing.
+    return string.format("wezterm start --always-new-process %s -- bash -lc %q", class, cmd)
+end
+
+------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- THEMING --------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
@@ -193,7 +204,7 @@ network:buttons(
             {},
             1,
             function()
-                awful.spawn("xfce4-terminal --title 'popup' --geometry=110x40 -e nmtui", false)
+                awful.spawn(wez("sleep 0.2 && nmtui", {class = "popup"}), false)
                 awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
             end
         ),
@@ -201,8 +212,8 @@ network:buttons(
             {},
             3,
             function()
-                awful.spawn.with_shell('xfce4-terminal --command=\'bash -c "sudo nethogs; exec bash"\'')
-                awful.spawn.with_shell("xfce4-terminal -e speedtest")
+                awful.spawn(wez("sudo nethogs; exec bash"))
+                awful.spawn(wez("speedtest; exec bash"))
             end
         )
     )
@@ -256,7 +267,7 @@ bluetooth:buttons(
             {},
             1,
             function()
-                awful.spawn("xfce4-terminal --title 'popup' --geometry=110x40 -e bluetuith", false)
+                awful.spawn(wez("bluetuith", {class = "popup"}), false)
             end
         )
     )
@@ -337,7 +348,7 @@ sys:buttons(
             {},
             1,
             function()
-                awful.spawn("xfce4-terminal -e htop")
+                awful.spawn(wez("htop"))
             end
         )
     )
