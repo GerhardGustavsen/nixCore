@@ -107,9 +107,9 @@ if [[ $driver_dead -eq 0 ]]; then
     done
 
     if [[ $seen -eq 1 ]]; then
-      notify normal "✅ eGPU active!" "$prog (pid $pid) is running on NVIDIA."
+      notify normal "✅ eGPU active!" "✅ $prog is running on NVIDIA"
     else
-      notify normal "✅ eGPU active!" "ℹ❔$prog (pid $pid) didn’t show on NVIDIA within ${detect_seconds}s."
+      notify normal "✅ eGPU active!" "⚠️ $prog didn’t show on NVIDIA"
     fi
   ) & disown
 fi

@@ -50,7 +50,7 @@ end
 ------------------------------------------------- SETTINGS -------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
 
-terminal = "xfce4-terminal"
+terminal = "wezterm"
 editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
 modkey = "Mod4"
@@ -473,6 +473,7 @@ clientkeys =
 
             -- Terminal classes (scrap only if generic name)
             local terminal_classes = {
+                ["WezTerm"] = true,
                 ["Alacritty"] = true,
                 ["kitty"] = true,
                 ["Xfce4-terminal"] = true,
@@ -693,7 +694,7 @@ awful.rules.rules = {
     },
     -- Terminals:
     {
-        rule_any = {class = {"Xfce4-terminal", "XTerm", "URxvt", "Alacritty", "kitty", "st"}},
+        rule_any = {class = {"WezTerm", "Xfce4-terminal", "XTerm", "URxvt", "Alacritty", "kitty", "st"}},
         properties = {size_hints_honor = false}
     }
 }

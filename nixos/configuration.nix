@@ -327,10 +327,10 @@ in {
 
     # Terminal:
     xfce.xfce4-terminal
-    vim
+    wezterm
 
-    # Mobile internett:
-    modem-manager-gui
+    # Editors:
+    vim
 
     # Backupp browser:
     chromium
@@ -365,6 +365,7 @@ in {
     speedtest-cli # network speed test
     nethogs # program network usage
     bluetuith
+    modem-manager-gui # 4G GUI
 
     # Cmd tools:
     zip # zip files
