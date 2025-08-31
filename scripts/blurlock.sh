@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lock.sh [hex_blur]
 
 set -euo pipefail
 
@@ -12,8 +11,8 @@ fi
 # uptime in seconds
 UPTIME=$(awk '{print int($1)}' /proc/uptime)
 
-# if system older than 600s (10 min), then exit
-if (( UPTIME < 600 )); then
+# if system older than 10s, then exit
+if (( UPTIME < 10 )); then
   exit 0
 fi
 
