@@ -12,6 +12,68 @@ local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
 local statusbar = require("statusbar")
 
+-- ---------- eGPU + monitor helpers (boot-only check for eGPU) ----------
+local HAS_EGPU = false
+
+-- Count active screens
+local function screen_count()
+    local n = 0
+    for _ in screen do
+        n = n + 1
+    end
+    return n
+end
+
+local function refresh_monitor_prefixes()
+    local n = screen_count()
+    for s in screen do
+        if s.monitor_prefix then
+            if n > 1 then
+                s.monitor_prefix.markup =
+                    string.format(
+                    "<span font='%s' foreground='%s' size='11pt' rise='1000' >(%s)</span>",
+                    beautiful.font,
+                    "#8700ff",
+                    s.index
+                )
+                s.monitor_prefix.visible = true
+            else
+                s.monitor_prefix.markup = ""
+                s.monitor_prefix.visible = false
+            end
+        end
+    end
+end
+
+-- Keep prefixes correct as screens are added/removed/resize
+screen.connect_signal(
+    "added",
+    function(_)
+        refresh_monitor_prefixes()
+    end
+)
+screen.connect_signal(
+    "removed",
+    function(_)
+        refresh_monitor_prefixes()
+    end
+)
+screen.connect_signal(
+    "property::geometry",
+    function(_)
+        refresh_monitor_prefixes()
+    end
+)
+
+-- One-shot eGPU detection at boot; emits a signal when known
+awful.spawn.easy_async_with_shell(
+    [[sh -c 'nvidia-smi -L >/dev/null 2>&1 && echo YES || echo NO']],
+    function(out)
+        HAS_EGPU = out:match("YES") ~= nil
+        awesome.emit_signal("env::egpu_ready", HAS_EGPU)
+    end
+)
+
 ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------- ERROR HANDLING -------------------------------------------
 ------------------------------------------------------------------------------------------------------------
@@ -165,6 +227,42 @@ awful.screen.connect_for_each_screen(
             )
         )
 
+        -- --- Small label before the taglist: "N:" if multiple monitors
+        s.monitor_prefix =
+            wibox.widget {
+            widget = wibox.widget.textbox,
+            align = "left",
+            valign = "center",
+            text = "" -- filled by refresh_monitor_prefixes()
+        }
+
+        -- --- Small label after the taglist: " eGPU" if detected at boot
+        s.egpu_label =
+            wibox.widget {
+            widget = wibox.widget.textbox,
+            align = "left",
+            valign = "center",
+            markup = string.format(
+                "<span font='%s' foreground='%s' size='11pt' rise='1000' > eGPU</span>",
+                beautiful.font,
+                "#00ff00"
+            ),
+            visible = HAS_EGPU
+        }
+
+        -- set initial monitor prefix state
+        refresh_monitor_prefixes()
+
+        -- react once eGPU detection finishes
+        awesome.connect_signal(
+            "env::egpu_ready",
+            function(has)
+                if s.egpu_label then
+                    s.egpu_label.visible = has
+                end
+            end
+        )
+
         -- Statusbar
         s.mywibox = awful.wibar({position = "top", screen = s, height = 22})
         s.mywibox:setup {
@@ -172,7 +270,9 @@ awful.screen.connect_for_each_screen(
             {
                 --- Left widgets
                 layout = wibox.layout.fixed.horizontal,
-                s.mytaglist
+                s.monitor_prefix, -- monitor num
+                s.mytaglist, -- your numeric tags
+                s.egpu_label -- " eGPU"
             },
             nil, -- middle widgets
             {
