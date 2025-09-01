@@ -31,7 +31,7 @@ theme.fg_minimize = "#000000" -- minimize text (same as inactive workspace text)
 -- Borders & gaps
 theme.useless_gap = dpi(4)
 theme.border_width = dpi(1)
-theme.border_normal = "#FFFFFF" -- unfocused border
+theme.border_normal = "#5e5e5e" -- unfocused border
 theme.border_focus = "#8700ff" -- focused border
 theme.border_marked = "#FF0000" -- marked window border (used rarely)
 

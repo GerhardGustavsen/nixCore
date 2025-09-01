@@ -19,10 +19,11 @@ echo "Started unclutter"
 # Set up screenlock
 LOCK="$HOME/nixCore/scripts/blurlock.sh"
 xidlehook --not-when-audio --not-when-fullscreen --timer 400 "$LOCK" '' &
+xidlehook --not-when-fullscreen --timer 801 "$LOCK" '' &
 echo "Started idle screen lock"
 
 # Set upp screen off rule
-xset dpms 0 0 600 # Turn off screen after 10min.
+xset dpms 0 0 900 # Turn off screen after 15min.
 
 # Kill and restart udiskie
 pkill udiskie

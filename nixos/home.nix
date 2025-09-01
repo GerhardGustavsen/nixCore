@@ -129,12 +129,16 @@
 
     # Rice:
     unclutter
+    xwallpaper
+    papirus-icon-theme
+
+    # Fun:    
+    fastfetch
     neofetch
     cmatrix
     pipes
     cava
-    xwallpaper
-    papirus-icon-theme
+    asciiquarium-transparent
   ];
 
   # ------------------------------------------------------------------------------------------

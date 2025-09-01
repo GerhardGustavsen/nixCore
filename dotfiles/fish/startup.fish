@@ -72,5 +72,6 @@ if status is-interactive
     alias update='reconfigure update'
 
     alias minecraft='egpu prismlauncher'
+    alias quarium='asciiquarium --transparent'
 
 end
