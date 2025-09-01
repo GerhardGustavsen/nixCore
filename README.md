@@ -1,25 +1,25 @@
-  [~]❯ neofetch
-            ▗▄▄▄       ▗▄▄▄▄    ▄▄▄▖            gg@nix
-            ▜███▙       ▜███▙  ▟███▛            ------
-             ▜███▙       ▜███▙▟███▛             OS: NixOS
-              ▜███▙       ▜██████▛              Host: Thnkpad T480
-       ▟█████████████████▙ ▜████▛     ▟▙        Kernel: 6.12.43
-      ▟███████████████████▙ ▜███▙    ▟██▙       Uptime: yes
-             ▄▄▄▄▖           ▜███▙  ▟███▛       Packages: 1033 (nix-system), 1162 (nix-user)
-            ▟███▛             ▜██▛ ▟███▛        Shell: fish 4.0.2
-           ▟███▛               ▜▛ ▟███▛         Resolution: ok
-  ▟███████████▛                  ▟██████████▙   DE: none+awesome
-  ▜██████████▛                  ▟███████████▛   WM: awesome
-        ▟███▛ ▟▙               ▟███▛            Icons: Papirus-Dark [GTK2/3]
-       ▟███▛ ▟██▙             ▟███▛             Terminal: WezTerm
-      ▟███▛  ▜███▙           ▝▀▀▀▀              CPU: Intel i7-8550U (8) @ 4.000GHz
-      ▜██▛    ▜███▙ ▜██████████████████▛        GPU: Intel UHD Graphics
-       ▜▛     ▟████▙ ▜████████████████▛         GPU: NVIDIA GeForce eGPU
-             ▟██████▙       ▜███▙               Memory: 4973MiB / 23793MiB
-            ▟███▛▜███▙       ▜███▙
-           ▟███▛  ▜███▙       ▜███▙
-           ▝▀▀▀    ▀▀▀▀▘       ▀▀▀▘
-
+    [~]❯ neofetch
+              ▗▄▄▄       ▗▄▄▄▄    ▄▄▄▖            gg@nix
+              ▜███▙       ▜███▙  ▟███▛            ------
+               ▜███▙       ▜███▙▟███▛             OS: NixOS
+                ▜███▙       ▜██████▛              Host: Thnkpad T480
+         ▟█████████████████▙ ▜████▛     ▟▙        Kernel: 6.12.43
+        ▟███████████████████▙ ▜███▙    ▟██▙       Uptime: yes
+               ▄▄▄▄▖           ▜███▙  ▟███▛       Packages: 1033 (nix-system), 1162 (nix-user)
+              ▟███▛             ▜██▛ ▟███▛        Shell: fish 4.0.2
+             ▟███▛               ▜▛ ▟███▛         Resolution: ok
+    ▟███████████▛                  ▟██████████▙   DE: none+awesome
+    ▜██████████▛                  ▟███████████▛   WM: awesome
+          ▟███▛ ▟▙               ▟███▛            Icons: Papirus-Dark [GTK2/3]
+         ▟███▛ ▟██▙             ▟███▛             Terminal: WezTerm
+        ▟███▛  ▜███▙           ▝▀▀▀▀              CPU: Intel i7-8550U (8) @ 4.000GHz
+        ▜██▛    ▜███▙ ▜██████████████████▛        GPU: Intel UHD Graphics
+         ▜▛     ▟████▙ ▜████████████████▛         GPU: NVIDIA GeForce eGPU
+               ▟██████▙       ▜███▙               Memory: 4973MiB / 23793MiB
+              ▟███▛▜███▙       ▜███▙
+             ▟███▛  ▜███▙       ▜███▙
+             ▝▀▀▀    ▀▀▀▀▘       ▀▀▀▘
+  
 ## Overview
 
 This repo contains my NixOS flake-based configuration and setup scripts.  
