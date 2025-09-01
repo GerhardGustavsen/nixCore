@@ -364,7 +364,7 @@ in {
     baobab # disk analyser tool
     speedtest-cli # network speed test
     nethogs # program network usage
-    bluetuith
+    bluetuith # Bluetooth TUI
     modem-manager-gui # 4G GUI
 
     # Cmd tools:
@@ -380,17 +380,17 @@ in {
     xorg.xmodmap # list keycodes
     imagemagick # Blur images
     xdotool # for scripts flashing to microcontollers
-    wget
-    usbutils
-    lsof
-    pciutils
-    inotify-tools
-    coreutils
-    maim
-    lshw
+    wget # download files from web
+    usbutils # list USB devices
+    lsof # list open files/processes
+    pciutils # list PCI devices
+    inotify-tools # filesystem change watcher
+    coreutils # GNU base tools (ls, cp, etc.)
+    maim # screenshot tool
+    lshw # list hardware details
     sshfs # acsess to folk.NTNU
     xidlehook # autolocker
-    ntfs3g # Windows filesystem
+    ntfs3g # Windows filesystem support
     file-roller # zip and unzip for thunar
     mesa-demos # GPU utils
     nftables # Filefwall tools
