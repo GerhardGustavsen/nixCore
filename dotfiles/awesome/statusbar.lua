@@ -204,7 +204,7 @@ network:buttons(
             {},
             1,
             function()
-                awful.spawn(wez("sleep 0.2 && nmtui", {class = "popup"}), false)
+                awful.spawn(wez("sleep 0.2 && env NEWT_COLORS='root=,default' nmtui", {class = "popup"}), false)
                 awful.spawn.with_shell("nm-applet & sleep 30 && pkill nm-applet")
             end
         ),
