@@ -78,6 +78,7 @@ reload() {
     copy "$COREDOT/awesome/statusbar.lua" "$DOT/awesome/statusbar.lua"
     copy "$COREDOT/awesome/theme.lua" "$DOT/awesome/theme.lua"
     copy "$COREDOT/wezterm.lua" "$DOT/wezterm/wezterm.lua"
+    copy "$COREDOT/cava.conf" "$DOT/cava/config"
 
     step "Creating symlinks for scripts…"
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"

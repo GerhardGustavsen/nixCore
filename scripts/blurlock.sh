@@ -11,8 +11,8 @@ fi
 # uptime in seconds
 UPTIME=$(awk '{print int($1)}' /proc/uptime)
 
-# if system older than 10s, then exit
-if (( UPTIME < 10 )); then
+# if system older than 50s, then exit
+if (( UPTIME < 50 )); then
   exit 0
 fi
 
