@@ -3,13 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nix-index-database.url = "github:nix-community/nix-index-database";
+    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }:
+  outputs = { self, nixpkgs, nix-index-database, home-manager, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -20,16 +22,12 @@
           inherit system;
           modules = [
             ./configuration.nix
-
-            # Enable Home Manager as a NixOS module
+            nix-index-database.nixosModules.nix-index
             home-manager.nixosModules.home-manager
 
             # Configure Home Manager user 'gg' to import home.nix
             ({ config, lib, pkgs, ... }: {
-              home-manager.users.gg = {
-                # Load your home.nix as a Home Manager module
-                imports = [ ./home.nix ];
-              };
+              home-manager.users.gg = { imports = [ ./home.nix ]; };
             })
           ];
         };

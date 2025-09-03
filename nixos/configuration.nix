@@ -13,7 +13,8 @@ in {
 
   imports = [ ./hardware-configuration.nix ];
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  programs.command-not-found.enable = false; # fix this!
+  #programs.command-not-found.enable = true;
+  programs.nix-index.enableBashIntegration = true;
   networking.hostName = "nix";
 
   # ENV varriables
@@ -326,7 +327,6 @@ in {
     config.boot.kernelPackages.nvidia_x11
 
     # Terminal:
-    xfce.xfce4-terminal
     wezterm
 
     # Editors:
@@ -395,8 +395,19 @@ in {
     mesa-demos # GPU utils
     nftables # Filefwall tools
     glmark2 # GPU benchmark
-  ];
+    mpv # the best video player
 
+    # MAN PAGES:
+    man-pages
+    man-pages-posix
+  ];
+  documentation.dev.enable = true;
+  documentation.man = {
+    man-db.enable = false;
+    mandoc.enable = true;
+  };
+
+  # SYNCTHING
   services = {
     syncthing = {
       enable = true;
