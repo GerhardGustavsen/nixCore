@@ -396,6 +396,8 @@ in {
     nftables # Filefwall tools
     glmark2 # GPU benchmark
     mpv # the best video player
+    bat # cat but with colors
+    bat-extras.core # Batman
 
     # MAN PAGES:
     man-pages

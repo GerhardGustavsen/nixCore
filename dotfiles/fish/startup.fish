@@ -64,14 +64,6 @@ if status is-interactive
     end
 
     # ----------------------------------------------------------------
-    # --------------------------- nix-shell --------------------------
-    # ----------------------------------------------------------------
-
-    function try
-        command nix-shell -p $argv
-    end
-
-    # ----------------------------------------------------------------
     # ----------------------------- Aliases --------------------------
     # ----------------------------------------------------------------
 
@@ -84,5 +76,10 @@ if status is-interactive
     # Fun
     alias minecraft='egpu prismlauncher'
     alias quarium='asciiquarium --transparent'
+
+    # Misc
+    alias cat='bat'
+    alias try='nix-shell -p'
+    alias man='batman'
 
 end
