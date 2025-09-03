@@ -22,9 +22,11 @@ if status is-interactive
                 end
 
             case lts
-                # always auto-commit with LTS prefix
                 set -l ts (date '+%Y-%m-%d %H:%M:%S')
                 command git commit -m "lts: $ts"
+
+            case p
+                command git push
 
             case '*'
                 # any other git command, just pass through
@@ -33,7 +35,7 @@ if status is-interactive
     end
 
     # ----------------------------------------------------------------
-    # ------------------------- !! commands --------------------------
+    # ------------------------------ !! ------------------------------
     # ----------------------------------------------------------------
 
     function bind_bang
@@ -62,15 +64,24 @@ if status is-interactive
     end
 
     # ----------------------------------------------------------------
+    # --------------------------- nix-shell --------------------------
+    # ----------------------------------------------------------------
+
+    function try
+        command nix-shell -p $argv
+    end
+
+    # ----------------------------------------------------------------
     # ----------------------------- Aliases --------------------------
     # ----------------------------------------------------------------
 
-    # Define aliases:
+    # Reconfigure
     alias reload='reconfigure reload'
     alias rebuild='reconfigure rebuild'
     alias upgrade='reconfigure upgrade'
     alias update='reconfigure update'
 
+    # Fun
     alias minecraft='egpu prismlauncher'
     alias quarium='asciiquarium --transparent'
 
