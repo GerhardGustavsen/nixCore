@@ -187,7 +187,7 @@ in {
     enable = true;
     # Syncthing:
     allowedTCPPorts = [
-      8384
+      # 8384
       22000
     ]; # 22000 TCP and/or UDP for sync traffic & 8384 for remote access to GUI
     allowedUDPPorts = [ 22000 21027 ]; # 21027/UDP for discovery
@@ -397,7 +397,7 @@ in {
     glmark2 # GPU benchmark
     mpv # the best video player
     bat # cat but with colors
-    bat-extras.core # Batman
+    bat-extras.core # Batman!
 
     # MAN PAGES:
     man-pages
@@ -410,13 +410,20 @@ in {
   };
 
   # SYNCTHING
-  services = {
-    syncthing = {
-      enable = true;
-      group = "users";
-      user = "gg";
-      dataDir = "/home/gg/sync";
-      configDir = "/home/gg/sync/.config/syncthing";
+  services.syncthing = {
+    enable = true;
+    group = "users";
+    user = "gg";
+    dataDir = "/home/gg/sync";
+    configDir = "/home/gg/sync/.config/syncthing";
+    settings = {
+      folders = {
+        "sync" = {
+          path = "/home/gg/sync";
+          id = "sync";
+          label = "sync";
+        };
+      };
     };
   }; # GUI on http://127.0.0.1:8384/
 
