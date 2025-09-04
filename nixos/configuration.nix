@@ -366,6 +366,7 @@ in {
     nethogs # program network usage
     bluetuith # Bluetooth TUI
     modem-manager-gui # 4G GUI
+    syncthing # GUI on http://127.0.0.1:8384/
 
     # Cmd tools:
     zip # zip files
@@ -408,24 +409,6 @@ in {
     man-db.enable = false;
     mandoc.enable = true;
   };
-
-  # SYNCTHING
-  services.syncthing = {
-    enable = true;
-    group = "users";
-    user = "gg";
-    dataDir = "/home/gg/sync";
-    configDir = "/home/gg/sync/.config/syncthing";
-    settings = {
-      folders = {
-        "sync" = {
-          path = "/home/gg/sync";
-          id = "sync";
-          label = "sync";
-        };
-      };
-    };
-  }; # GUI on http://127.0.0.1:8384/
 
   # ------------------------------------------------------------------------------------------
   # -------------------------------------- FILEMANAGER ---------------------------------------
