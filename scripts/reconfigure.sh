@@ -66,7 +66,6 @@ EXE="$HOME/.local/bin"
 
 reload() {
     step "Copying dotfiles…"
-    copy "$COREDOT/xfce-terminal.xml" "$DOT/xfce4/xfconf/xfce-perchannel-xml/xfce4-terminal.xml"
     copy "$COREDOT/dunst.conf" "$DOT/dunst/dunstrc"
     copy "$COREDOT/udiskie.yml" "$DOT/udiskie/config.yml"
     copy "$COREDOT/rofi.rasi" "$DOT/rofi/config.rasi"
@@ -79,6 +78,11 @@ reload() {
     copy "$COREDOT/awesome/theme.lua" "$DOT/awesome/theme.lua"
     copy "$COREDOT/wezterm.lua" "$DOT/wezterm/wezterm.lua"
     copy "$COREDOT/cava.conf" "$DOT/cava/config"
+    copy "$COREDOT/nvim/init.lua" "$DOT/nvim/init.lua"
+    copy "$COREDOT/nvim/lua/keymaps.lua" "$DOT/nvim/lua/keymaps.lua"
+    copy "$COREDOT/nvim/lua/options.lua" "$DOT/nvim/lua/options.lua"
+    copy "$COREDOT/nvim/lua/plugins.lua" "$DOT/nvim/lua/plugins.lua"
+    copy "$COREDOT/nvim/lua/theme.lua" "$DOT/nvim/lua/theme.lua"
 
     step "Creating symlinks for scripts…"
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"

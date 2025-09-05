@@ -20,7 +20,7 @@ in {
   # ENV varriables
   environment.variables = {
     TERMINAL = "wezterm";
-    EDITOR = "vim";
+    EDITOR = "nvim";
     BROWSER = "firefox";
   };
   systemd.user.extraConfig = ''
@@ -410,7 +410,9 @@ in {
     mandoc.enable = true;
   };
 
-  # SYNCTHING
+  # ------------------------------------------------------------------------------------------
+  # -------------------------------------- SYNCTHING -----------------------------------------
+  # ------------------------------------------------------------------------------------------
 
   services.syncthing = {
     enable = true;

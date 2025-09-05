@@ -38,7 +38,7 @@ return {
     },
     bold_brightens_ansi_colors = true,
     window_background_opacity = 0.70,
-    text_background_opacity = 1,
+    text_background_opacity = 0.20,
     window_decorations = "RESIZE",
     enable_tab_bar = false,
     enable_scroll_bar = false,

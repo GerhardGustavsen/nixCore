@@ -78,7 +78,6 @@ if status is-interactive
     alias quarium='asciiquarium --transparent'
 
     # Misc
-    alias cat='bat'
     alias try='nix-shell -p'
     alias man='batman'
 
