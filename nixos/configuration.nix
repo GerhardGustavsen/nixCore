@@ -13,7 +13,7 @@ in {
 
   imports = [ ./hardware-configuration.nix ];
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  #programs.command-not-found.enable = true;
+  #programs.command-not-found.enable = false;
   programs.nix-index.enableBashIntegration = true;
   networking.hostName = "nix";
 
@@ -349,7 +349,14 @@ in {
     python3
     gcc
     poetry
+
+    # Code formatters
     nixfmt-classic # Nix formatter
+    stylua
+    black
+    shfmt
+    nodePackages.prettier
+    jq
 
     # Small programs:
     rofi # Application launcer

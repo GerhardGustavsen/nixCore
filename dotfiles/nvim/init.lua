@@ -1,5 +1,6 @@
 require("options")
 require("keymaps")
+require("autocmd")
 require("theme").setup()
 
 -- Bootstrap lazy.nvim if not installed

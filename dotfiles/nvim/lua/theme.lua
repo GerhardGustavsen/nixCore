@@ -8,13 +8,13 @@ local p = {
     dimfg = "#cccccc", -- dimmed text (inactive statusline, unfocused windows, etc.)
     gutter = "#8daaad", -- line numbers, signs, separators
     neon = "#8700ff", -- primary accent (purple) → functions, cursor line, highlights
-    cyan = "#ffee00", -- constants, types, operators
-    green = "#00e5ff", -- strings, success states, Git additions
-    yellow = "#ff6600", -- keywords, TODOs, search highlights
-    orange = "#3cff00", -- numbers, booleans, Git warnings
+    yellow = "#ffee00", -- constants, types, operators
+    cyan = "#00e5ff", -- strings, success states, Git additions
+    orange = "#ff6600", -- keywords, TODOs, search highlights
+    green = "#3cff00", -- numbers, booleans, Git warnings
     red = "#ff0000", -- errors, Git deletions, critical highlights
-    magenta = "#003cff", -- secondary accent → statements, keywords, special punctuation
-    blue = "#ff0095" -- identifiers, fields, Git changes, info highlights
+    blue = "#003cff", -- secondary accent → statements, keywords, special punctuation
+    magenta = "#ff0095" -- identifiers, fields, Git changes, info highlights
 }
 
 local tint_cmnt = "#939fe9" -- comments
@@ -40,6 +40,10 @@ function M.setup()
     hi("LineNr", {fg = tint_gutter, bg = BG(p.bg)})
     hi("LineNrAbove", {fg = tint_gutter, bg = BG(p.bg)})
     hi("LineNrBelow", {fg = tint_gutter, bg = BG(p.bg)})
+
+    -- Top title (per-window)
+    hi("WinBar", {fg = p.cyan, bg = BG(p.bg), bold = true})
+    hi("WinBarNC", {fg = p.dimfg, bg = BG(p.bg)})
 
     -- current line: make it visible even on transparent bg
     hi("CursorLine", {bg = "#1a0933"}) -- neon-purplish strip; change to "NONE", underline=true if you prefer

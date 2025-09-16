@@ -5,7 +5,10 @@ return {
     font = wezterm.font_with_fallback(
         {
             {family = "JetBrains Mono NL", weight = "DemiBold"},
-            {family = "JetBrains Mono", weight = "DemiBold"}
+            {family = "JetBrains Mono", weight = "DemiBold"},
+            {family = "JetBrainsMono Nerd Font"}, -- patched version with glyphs
+            {family = "Font Awesome 6 Free"}, -- optional, for explicit FA support
+            {family = "Noto Color Emoji"} -- for emoji fallback
         }
     ),
     font_size = 11.0,
@@ -38,7 +41,7 @@ return {
     },
     bold_brightens_ansi_colors = true,
     window_background_opacity = 0.70,
-    text_background_opacity = 0.20,
+    text_background_opacity = 1,
     window_decorations = "RESIZE",
     enable_tab_bar = false,
     enable_scroll_bar = false,

@@ -83,6 +83,7 @@ reload() {
     copy "$COREDOT/nvim/lua/options.lua" "$DOT/nvim/lua/options.lua"
     copy "$COREDOT/nvim/lua/plugins.lua" "$DOT/nvim/lua/plugins.lua"
     copy "$COREDOT/nvim/lua/theme.lua" "$DOT/nvim/lua/theme.lua"
+    copy "$COREDOT/nvim/lua/autocmd.lua" "$DOT/nvim/lua/autocmd.lua"
 
     step "Creating symlinks for scripts…"
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"

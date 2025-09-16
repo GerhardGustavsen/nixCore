@@ -64,6 +64,27 @@ if status is-interactive
     end
 
     # ----------------------------------------------------------------
+    # -------------------- Functions for idiots ----------------------
+    # ----------------------------------------------------------------
+    
+    function month
+        set -l cur (date +%m)
+    
+        printf "\e[38;5;27m01 January (31)";   test "$cur" = "01"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;27m02 February (28/29)"; test "$cur" = "02"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;40m03 March (31)";     test "$cur" = "03"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;40m04 April (30)";     test "$cur" = "04"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;40m05 May (31)";       test "$cur" = "05"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;226m06 June (30)";     test "$cur" = "06"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;226m07 July (31)";     test "$cur" = "07"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;226m08 August (31)";   test "$cur" = "08"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;208m09 September (30)"; test "$cur" = "09"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;208m10 October (31)";   test "$cur" = "10"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;208m11 November (30)";  test "$cur" = "11"; and printf " <--"; printf "\e[0m\n"
+        printf "\e[38;5;27m12 December (31)";   test "$cur" = "12"; and printf " <--"; printf "\e[0m\n"
+    end
+
+    # ----------------------------------------------------------------
     # ----------------------------- Aliases --------------------------
     # ----------------------------------------------------------------
 

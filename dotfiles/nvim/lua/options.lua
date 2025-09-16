@@ -9,3 +9,7 @@ opt.wrap = false -- no line wrap
 opt.termguicolors = true -- better colors
 opt.cursorline = true
 opt.cursorlineopt = "both"
+opt.clipboard = "unnamedplus"
+opt.winbar = "%t"
+opt.laststatus = 0
+opt.showmode = false
