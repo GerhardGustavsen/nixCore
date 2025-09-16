@@ -713,17 +713,22 @@ gears.timer({
 })
 
 gears.timer.delayed_call(function()
-	-- startupp programs
+	-- startup programs
 	awful.spawn.with_shell("/home/gg/nixCore/scripts/startup.sh")
 
-	-- Async: is the laptop lid closed?
-	local function lid_is_closed(cb)
-		awful.spawn.easy_async_with_shell(
-			[[sh -c 'grep -hE "state" /proc/acpi/button/lid/*/state 2>/dev/null | awk "{print tolower($2)}" | tail -n1' ]],
-			function(out)
-				cb(out:match("closed") ~= nil)
-			end
-		)
+	-- --- server mode check (sync + simple) ---
+	local function is_server_mode()
+		local xdg = os.getenv("XDG_CONFIG_HOME")
+		local home = os.getenv("HOME") or "~"
+		local state_file = (xdg and (xdg .. "/mode/state")) or (home .. "/.config/mode/state")
+		local f = io.open(state_file, "r")
+		if not f then
+			return false
+		end
+		local s = f:read("*a") or ""
+		f:close()
+		s = s:gsub("%s+", "")
+		return s == "server"
 	end
 
 	-- Find the first valid "preload" tag across all screens
@@ -771,22 +776,21 @@ gears.timer.delayed_call(function()
 		autostart = true,
 		single_shot = true,
 		callback = function()
-			lid_is_closed(function(closed)
-				if closed then
+			-- single gate: if server mode, do nothing
+			if is_server_mode() then
+				return
+			end
+
+			local preload_tag = find_preload_tag()
+			if not preload_tag then
+				return
+			end
+
+			firefox_running(function(running)
+				if running then
 					return
 				end
-
-				local preload_tag = find_preload_tag()
-				if not preload_tag then
-					return
-				end
-
-				firefox_running(function(running)
-					if running then
-						return
-					end
-					spawn_firefox_on_tag(preload_tag)
-				end)
+				spawn_firefox_on_tag(preload_tag)
 			end)
 		end,
 	})

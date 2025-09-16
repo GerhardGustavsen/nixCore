@@ -11,23 +11,6 @@ return {
     },
     -- LSP
     {"neovim/nvim-lspconfig"},
-    {
-        "HiPhish/rainbow-delimiters.nvim",
-        config = function()
-            local rainbow_delimiters = require("rainbow-delimiters")
-            vim.g.rainbow_delimiters = {
-                highlight = {
-                    "RainbowDelimiterRed",
-                    "RainbowDelimiterYellow",
-                    "RainbowDelimiterBlue",
-                    "RainbowDelimiterOrange",
-                    "RainbowDelimiterGreen",
-                    "RainbowDelimiterViolet",
-                    "RainbowDelimiterCyan"
-                }
-            }
-        end
-    },
     -- Multiple cursors (VS Code-style)
     {
         "mg979/vim-visual-multi",

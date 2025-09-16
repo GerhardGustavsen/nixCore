@@ -16,29 +16,27 @@ map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", opts)
 -- Window navigation
 map("n", "<Tab>", "<cmd>wincmd w<CR>", opts) -- next window
 
--- ESC: focus/open NvimTree
-map(
-    "n",
-    "<Esc>",
+-- Safer saves: <C-s> in normal/insert/visual
+vim.keymap.set(
+    {"n", "i", "v"},
+    "<C-s>",
     function()
-        -- if the tree is visible, just focus it; otherwise open + focus
-        local ok, view = pcall(require, "nvim-tree.view")
-        if ok and view.is_visible() then
-            vim.cmd("NvimTreeFocus")
-        else
-            vim.cmd("NvimTreeOpen | NvimTreeFocus")
-        end
-    end,
-    {noremap = true, silent = true, desc = "Focus (or open) NvimTree"}
-)
-
--- replace default "substitute char" with format+save
-map(
-    "n",
-    "s",
-    function()
-        require("conform").format({async = false, lsp_fallback = true})
         vim.cmd("silent! write")
     end,
-    {desc = "Format + Save", noremap = true, silent = true}
+    {silent = true, desc = "Save"}
+)
+
+-- Format current buffer
+vim.keymap.set(
+    "n",
+    "<leader>f",
+    function()
+        local ok, conform = pcall(require, "conform")
+        if ok then
+            conform.format({async = false, lsp_fallback = true})
+        else
+            vim.lsp.buf.format({async = false})
+        end
+    end,
+    {silent = true, desc = "Format"}
 )
