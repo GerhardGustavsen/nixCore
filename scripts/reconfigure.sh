@@ -32,8 +32,8 @@ link() {
 }
 
 kill_clients_on_workspace() {
-  local tag="$1"
-  awesome-client <<EOF
+    local tag="$1"
+    awesome-client <<EOF
 for _, c in ipairs(client.get()) do
   if c.first_tag and c.first_tag.name == "${tag}" then
     c:kill()
@@ -43,15 +43,15 @@ EOF
 }
 
 save_visible_tags() {
-  : > /tmp/awesome-visible-tags
-  for screen in $(seq 1 5); do
-    raw_output=$(awesome-client "return (screen[${screen}] and screen[${screen}].selected_tag and screen[${screen}].selected_tag.name) or ''" 2>/dev/null)
-    tag=$(printf "%s" "$raw_output" | sed -n 's/.*"\(.*\)".*/\1/p')
-    tag=$(printf "%s" "$tag" | tr -d '"\n ')
-    if [ -n "$tag" ]; then
-      echo "${screen}:${tag}" >> /tmp/awesome-visible-tags
-    fi
-  done
+    : >/tmp/awesome-visible-tags
+    for screen in $(seq 1 5); do
+        raw_output=$(awesome-client "return (screen[${screen}] and screen[${screen}].selected_tag and screen[${screen}].selected_tag.name) or ''" 2>/dev/null)
+        tag=$(printf "%s" "$raw_output" | sed -n 's/.*"\(.*\)".*/\1/p')
+        tag=$(printf "%s" "$tag" | tr -d '"\n ')
+        if [ -n "$tag" ]; then
+            echo "${screen}:${tag}" >>/tmp/awesome-visible-tags
+        fi
+    done
 }
 
 # -------------------- Paths --------------------
@@ -84,6 +84,7 @@ reload() {
     copy "$COREDOT/nvim/lua/plugins.lua" "$DOT/nvim/lua/plugins.lua"
     copy "$COREDOT/nvim/lua/theme.lua" "$DOT/nvim/lua/theme.lua"
     copy "$COREDOT/nvim/lua/autocmd.lua" "$DOT/nvim/lua/autocmd.lua"
+    copy "$COREDOT/qbittorrent.conf" "$DOT/qBittorrent/qBittorrent.conf"
 
     step "Creating symlinks for scripts…"
     link "$CORESCR/reconfigure.sh" "$EXE/reconfigure"

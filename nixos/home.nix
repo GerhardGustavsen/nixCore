@@ -117,6 +117,9 @@
     kicad-small
     discord
     freecad
+    #transmission
+    qbittorrent
+    protonvpn-gui
 
     # Games:
     prismlauncher # open source minecraft launcher
