@@ -117,7 +117,6 @@
     kicad-small
     discord
     freecad
-    kodi
     qbittorrent
     protonvpn-gui
 

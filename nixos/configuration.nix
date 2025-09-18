@@ -348,6 +348,8 @@ in {
     # Coding resources:
     python3
     gcc
+    pnpm
+    nodejs_22
     poetry
 
     # Code formatters
